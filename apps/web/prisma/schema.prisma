@@ -1,0 +1,108 @@
+// Household Financial Intelligence — Prisma schema
+
+generator client {
+  provider = "prisma-client-js"
+  // npm workspaces hoists @prisma/client to repo root — generate beside it
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ExtractionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum FinancialEventType {
+  income
+  recurring_expense
+  one_time_expense
+  liability
+  asset
+}
+
+enum FinancialEventFrequency {
+  monthly
+  weekly
+  yearly
+  one_time
+}
+
+/// Document Intelligence — uploaded files and extracted raw text
+model Document {
+  id               String           @id @default(cuid())
+  filename         String
+  mimeType         String
+  sizeBytes        Int
+  storagePath      String           @unique
+  extractedText    String?          @db.Text
+  extractionStatus ExtractionStatus @default(PENDING)
+  extractionError  String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  obligations      FinancialObligation[]
+  financialEvents  FinancialEvent[]
+
+  @@index([createdAt])
+}
+
+/// Financial State — canonical household snapshot (scalars persisted; computed fields derived at read time)
+model FinancialState {
+  userId        String   @id @map("user_id")
+  currentCash   Decimal  @map("current_cash") @db.Decimal(14, 2)
+  monthlyIncome Decimal  @default(0) @map("monthly_income") @db.Decimal(14, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  events        FinancialEvent[]
+
+  @@map("financial_states")
+}
+
+/// Financial State — canonical financial events (persisted truth)
+model FinancialEvent {
+  id               String                  @id @default(cuid())
+  userId           String                  @map("user_id")
+  type             FinancialEventType
+  category         String
+  amount           Decimal                 @db.Decimal(12, 2)
+  currency         String                  @default("CAD")
+  frequency        FinancialEventFrequency
+  startDate        DateTime                @map("start_date") @db.Date
+  endDate          DateTime?               @map("end_date") @db.Date
+  confidence       Float                   @default(1)
+  sourceDocumentId String?                 @map("source_document_id")
+  metadata         Json                    @default("{}")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+  financialState   FinancialState          @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  sourceDocument   Document?               @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([startDate])
+  @@index([sourceDocumentId])
+  @@map("financial_events")
+}
+
+/// Financial State — user-managed obligations (MVP ledger UI; maps to events for summaries)
+model FinancialObligation {
+  id               String    @id @default(cuid())
+  name             String
+  category         String    @default("general")
+  amount           Decimal   @db.Decimal(12, 2)
+  currency         String    @default("CAD")
+  frequency        String    @default("monthly")
+  startDate        DateTime  @db.Date
+  endDate          DateTime? @db.Date
+  notes            String?   @db.Text
+  sourceDocumentId String?
+  sourceDocument   Document? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([startDate])
+  @@index([sourceDocumentId])
+}

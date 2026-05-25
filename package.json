@@ -1,0 +1,28 @@
+{
+  "name": "household-financial-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0",
+    "npm": ">=9.0.0"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "overrides": {
+    "next": {
+      "postcss": "8.5.15"
+    }
+  },
+  "scripts": {
+    "postinstall": "npm run db:generate --workspace=web",
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "lint": "npm run lint --workspace=web",
+    "db:generate": "npm run db:generate --workspace=web",
+    "db:migrate": "npm run db:migrate --workspace=web",
+    "db:push": "npm run db:push --workspace=web",
+    "db:studio": "npm run db:studio --workspace=web",
+    "test": "npm run test --workspace=web"
+  }
+}
