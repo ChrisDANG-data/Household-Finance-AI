@@ -1004,7 +1004,23 @@ function ChatInput() {
           ai_provider: provider,
         }),
       });
-      const json = await res.json();
+      const raw = await res.text();
+      let json: {
+        success?: boolean;
+        data?: unknown;
+        error?: { message?: string };
+      };
+      try {
+        json = JSON.parse(raw) as typeof json;
+      } catch {
+        const hint =
+          raw.trimStart().startsWith("<!DOCTYPE") ||
+          raw.trimStart().startsWith("<html")
+            ? `Server returned HTML (${res.status}). The scenario-chat API may be unavailable on this deployment.`
+            : `Invalid JSON response (${res.status}).`;
+        setError(hint);
+        return;
+      }
       if (json.success && json.data) {
         sessionStorage.setItem("chat_result", JSON.stringify({
           question: trimmed,

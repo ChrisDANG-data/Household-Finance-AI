@@ -9,6 +9,9 @@ import { AppError, toAppError } from "@/utils/errors";
 import { createScenarioChatStream } from "./stream";
 import { serializeScenarioChatResponse } from "./serialize";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 interface ScenarioChatBody {
   message: string;
   user_id: string;

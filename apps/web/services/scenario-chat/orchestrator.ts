@@ -1,7 +1,6 @@
 import { generateFinancialAdvice } from "@/services/ai/advisor";
 import { llmComplete } from "@/services/ai/llm/llm.service";
 import type { AiProvider } from "@/services/ai/llm/types";
-import { documentRagService } from "@/services/document-intelligence/indexing/rag.service";
 import { prisma } from "@/lib/prisma";
 import { orchestrateWithLangGraph } from "@/services/langgraph/orchestrator-client";
 import { currentUtcMonth } from "@/services/financial-state/dates";
@@ -22,6 +21,13 @@ import type {
 } from "./types";
 
 const FORECAST_MONTHS_DEFAULT = 12;
+
+async function loadDocumentRagService() {
+  const mod = await import(
+    "@/services/document-intelligence/indexing/rag.service"
+  );
+  return mod.documentRagService;
+}
 
 function buildInterpretation(
   intent: ScenarioIntent,
@@ -162,7 +168,9 @@ async function tryDocumentAnswer(
     }
 
     const [ragResult, financialContext] = await Promise.all([
-      documentRagService.retrieve({ query: message, topK: 5 }),
+      loadDocumentRagService().then((rag) =>
+        rag.retrieve({ query: message, topK: 5 }),
+      ),
       getFinancialContext(),
     ]);
 
@@ -226,7 +234,8 @@ OUTPUT FORMAT:
     }
 
     // Only document chunks, no DB obligations
-    const ragAnswer = await documentRagService.ask(message, {
+    const rag = await loadDocumentRagService();
+    const ragAnswer = await rag.ask(message, {
       topK: 5,
       provider,
     });
