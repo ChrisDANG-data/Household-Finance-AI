@@ -89,7 +89,10 @@ export function FinancialEventForm() {
       const res = await fetch("/api/financial-state/events");
       const json = await res.json();
       if (json.success) {
-        setEvents(json.data.events);
+        const sorted = [...json.data.events].sort((a, b) =>
+          b.start_date.localeCompare(a.start_date),
+        );
+        setEvents(sorted);
       }
     } catch {
       /* events list is best-effort */
@@ -97,6 +100,12 @@ export function FinancialEventForm() {
       setLoadingEvents(false);
     }
   }, []);
+
+  useEffect(() => {
+    const refresh = () => void fetchEvents();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [fetchEvents]);
 
   useEffect(() => {
     void fetchEvents();

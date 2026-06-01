@@ -27,6 +27,58 @@ docker compose up -d postgres n8n
 
 - `automation/n8n/workflows/daily-balance-sync-trigger.json`
 - `automation/n8n/workflows/alert-on-risk-threshold.json`
+- `automation/n8n/workflows/monthly-plaid-balance-snapshot.json`
+- `automation/n8n/workflows/monthly-financial-summary-email.json`
+
+### Telegram — add income / expense / investment
+
+Use **`POST /api/automation/ledger-event`** (simpler than `/api/financial-state/events`).
+
+| Field | Values |
+|-------|--------|
+| `kind` | `income`, `expense`, or `investment` |
+| `category` | e.g. `salary`, `rent`, `rrsp` |
+| `amount` | positive number |
+| `frequency` | optional — `monthly` (default), `weekly`, `yearly`, `one_time`, … |
+| `month` | optional — `May`, `2026-05`, `May 2026` → sets one-time + start date (1st of month) |
+| `start_date` | optional — `YYYY-MM-DD` (defaults to today, or from `month`) |
+| `owner` | optional — `partner_a` (default), `partner_b`, `joint` |
+| `confirm` | `true` → save (use this for Telegram); `false` → preview only |
+
+**Telegram / n8n (recommended — one step):**
+
+Always POST with `"confirm": true`. Reply to user with `data.reply` (e.g. “Saved: income salary $1,000.00 …”).
+
+**Optional two-step flow:** `confirm: false` → user says yes → `confirm: true` (needs IF branch + static data in n8n).
+
+**n8n tool:** `add_ledger_event` — POST `.../api/automation/ledger-event`
+
+**Routing:** verbs **add / record / log / create** → `add_ledger_event`. Never Plaid tools for writes.
+
+Bearer `Authorization` header when `AUTOMATION_WEBHOOK_TOKEN` is set.
+
+### Monthly summary email (Gmail)
+
+**New n8n workflow** (separate from Telegram): `monthly-financial-summary-email.json`
+
+| Step | Node |
+|------|------|
+| 1 | Schedule Trigger — `0 8 1 * *` (8:00 UTC on the 1st → previous month summary) |
+| 2 | HTTP GET `.../api/automation/monthly-summary?user_id=default` |
+| 3 | Gmail Send — subject/body from `data.subject` and `data.body` |
+
+**Query params:**
+
+| Param | Default |
+|-------|---------|
+| `month` | previous UTC month (`YYYY-MM`) |
+| `user_id` | `default` |
+
+**Response:** `{ subject, body, label, month, summary }` — ready for Gmail.
+
+**n8n variables:** `APP_API_BASE_URL`, `AUTOMATION_WEBHOOK_TOKEN`, `SUMMARY_EMAIL_TO`
+
+Optional: `?month=2026-05` to test a specific month.
 
 ## Plaid
 
