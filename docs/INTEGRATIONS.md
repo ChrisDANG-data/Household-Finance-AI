@@ -43,11 +43,9 @@ Use **`POST /api/automation/ledger-event`** (simpler than `/api/financial-state/
 | `month` | optional — `May`, `2026-05`, `May 2026` → sets one-time + start date (1st of month) |
 | `start_date` | optional — `YYYY-MM-DD` (defaults to today, or from `month`) |
 | `owner` | optional — `partner_a` (default), `partner_b`, `joint` |
-| `confirm` | `true` → save (use this for Telegram); `false` → preview only |
+| `confirm` | optional — defaults to **`true`** (save). Set `false` for preview only |
 
-**Telegram / n8n (recommended — one step):**
-
-Always POST with `"confirm": true`. Reply to user with `data.reply` (e.g. “Saved: income salary $1,000.00 …”).
+**Telegram / n8n:** POST without `confirm` (or with `"confirm": true`). Reply to user with `data.reply` (e.g. “Saved: income salary $1,000.00 …”). Check `data.status === "saved"` in n8n — `"preview"` means nothing was written.
 
 **Optional two-step flow:** `confirm: false` → user says yes → `confirm: true` (needs IF branch + static data in n8n).
 

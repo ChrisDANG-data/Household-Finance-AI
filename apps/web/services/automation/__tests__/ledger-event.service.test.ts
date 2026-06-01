@@ -30,6 +30,19 @@ vi.mock("@/services/financial-state/financial-state.persistence", () => ({
 describe("LedgerEventAutomationService", () => {
   const service = new LedgerEventAutomationService();
 
+  it("persists by default when confirm is omitted", async () => {
+    const result = await service.handle({
+      kind: "expense",
+      category: "utilities",
+      amount: 120,
+      frequency: "monthly",
+      start_date: "2026-06-01",
+    });
+
+    expect(result.status).toBe("saved");
+    expect(result.reply).toContain("Saved:");
+  });
+
   it("returns preview when confirm is false", async () => {
     const result = await service.handle({
       kind: "expense",

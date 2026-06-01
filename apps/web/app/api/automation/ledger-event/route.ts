@@ -9,7 +9,7 @@ import { toAppError } from "@/utils/errors";
 /**
  * POST — add income / expense / investment from automation (n8n, Telegram).
  * Simpler schema than /api/financial-state/events.
- * Default: preview only (confirm=false). Set confirm=true to persist.
+ * Default: save (confirm omitted or true). Set confirm=false for preview only.
  */
 export async function POST(request: Request) {
   try {

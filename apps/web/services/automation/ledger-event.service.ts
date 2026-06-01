@@ -231,8 +231,9 @@ export class LedgerEventAutomationService {
   async handle(input: LedgerEventAutomationInput): Promise<LedgerEventAutomationResult> {
     const preview = parsePreview(input);
     const summary = buildSummary(preview);
+    const confirm = input.confirm ?? true;
 
-    if (!input.confirm) {
+    if (!confirm) {
       return {
         status: "preview",
         reply: `Save ${summary}? Reply yes to confirm.`,
