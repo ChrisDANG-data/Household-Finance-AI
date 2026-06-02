@@ -1,10 +1,8 @@
-import { readFile } from "node:fs/promises";
-
 import Anthropic from "@anthropic-ai/sdk";
 import { createWorker } from "tesseract.js";
 import * as mupdf from "mupdf";
 
-import { resolveStoragePath } from "@/lib/storage/local-document-storage";
+import { readDocumentFile } from "@/lib/storage/document-storage";
 import { env } from "@/lib/env";
 import type { DocumentMimeType } from "@/types/documents";
 import { AppError } from "@/utils/errors";
@@ -100,8 +98,7 @@ export class TextExtractionService {
     storagePath: string,
     mimeType: DocumentMimeType,
   ): Promise<string> {
-    const resolved = resolveStoragePath(storagePath);
-    const buffer = await readFile(resolved);
+    const buffer = await readDocumentFile(storagePath);
 
     if (mimeType === "application/pdf") {
       const text = await extractPdfText(buffer);

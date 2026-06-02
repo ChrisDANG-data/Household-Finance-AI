@@ -1,7 +1,7 @@
 import { ExtractionStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { saveDocumentFile } from "@/lib/storage/local-document-storage";
+import { saveDocumentFile } from "@/lib/storage/document-storage";
 import { serializeDocument, type SerializedDocument } from "@/lib/serializers";
 import { textExtractionService } from "@/services/document-intelligence/extraction/text-extraction.service";
 import type { DocumentMimeType } from "@/types/documents";
@@ -61,6 +61,7 @@ export class DocumentRepository {
       doc.id,
       input.filename,
       input.buffer,
+      input.mimeType,
     );
 
     await prisma.document.update({

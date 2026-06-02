@@ -29,7 +29,7 @@ These are **not** in `package.json` today but match reserved env vars and servic
 | LLM SDKs | `openai`, `@anthropic-ai/sdk` | `services/ai-explanation/` only |
 | OCR | `@google-cloud/vision`, Azure SDK | `document-intelligence/extraction/` |
 | Vector DB | `@pinecone-database/pinecone`, `@qdrant/js-client-rest` | `document-intelligence/indexing/` |
-| File storage | `@aws-sdk/client-s3` | `STORAGE_PROVIDER=s3` |
+| File storage | `@vercel/blob` (blob), local disk (dev) | `STORAGE_PROVIDER=local|blob` |
 | Validation | `zod` | Request/env schema validation at API boundary |
 | Auth | `next-auth` / Clerk / Auth0 | Multi-user households |
 

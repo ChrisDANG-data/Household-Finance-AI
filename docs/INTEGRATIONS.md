@@ -9,6 +9,25 @@ This project now supports:
 
 All canonical writes must remain inside `apps/web/services/financial-state/`.
 
+## Document file storage (Vercel Blob)
+
+Uploaded PDFs/images are stored in **object storage**; Postgres holds metadata, extracted text, and embeddings only.
+
+| Env | Purpose |
+|-----|---------|
+| `STORAGE_PROVIDER` | `local` (default, dev) or `blob` (Vercel production) |
+| `BLOB_READ_WRITE_TOKEN` | Required when `STORAGE_PROVIDER=blob` — from Vercel → Storage → Blob |
+
+**Local dev:** omit or set `STORAGE_PROVIDER=local` — files go to `apps/web/.data/uploads/`.
+
+**Vercel:**
+
+1. Project → **Storage** → **Create Blob store** (links token automatically).
+2. Set env: `STORAGE_PROVIDER=blob` and `BLOB_READ_WRITE_TOKEN` (auto-injected if created via Vercel UI).
+3. Redeploy.
+
+`Document.storagePath` stores either a local filesystem path or a private blob URL. Extraction reads from whichever was used at upload time.
+
 ## n8n
 
 ### Local startup

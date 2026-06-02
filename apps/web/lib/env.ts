@@ -37,7 +37,19 @@ export const env = {
 
   upload: {
     maxSizeMb: Number(optionalEnv("UPLOAD_MAX_SIZE_MB", "25")),
-    storageProvider: optionalEnv("STORAGE_PROVIDER", "local"),
+    /** Resolved provider (defaults to local). */
+    storageProvider: (): "local" | "blob" => {
+      const value = optionalEnv("STORAGE_PROVIDER", "local").toLowerCase();
+      return value === "blob" ? "blob" : "local";
+    },
+    /** Raw env value, or empty when unset (for Vercel auto-detection). */
+    storageProviderExplicit: (): "" | "local" | "blob" => {
+      const raw = process.env.STORAGE_PROVIDER?.trim().toLowerCase();
+      if (raw === "blob") return "blob";
+      if (raw === "local") return "local";
+      return "";
+    },
+    blobReadWriteToken: () => optionalEnv("BLOB_READ_WRITE_TOKEN"),
   },
 
   ocr: {
