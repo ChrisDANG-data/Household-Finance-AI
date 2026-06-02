@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { ExtractionStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
@@ -47,26 +49,23 @@ export class DocumentRepository {
       });
     }
 
-    const doc = await prisma.document.create({
-      data: {
-        filename: input.filename,
-        mimeType: input.mimeType,
-        sizeBytes,
-        storagePath: "pending",
-        extractionStatus: ExtractionStatus.PENDING,
-      },
-    });
-
+    const documentId = randomUUID();
     const storagePath = await saveDocumentFile(
-      doc.id,
+      documentId,
       input.filename,
       input.buffer,
       input.mimeType,
     );
 
-    await prisma.document.update({
-      where: { id: doc.id },
-      data: { storagePath },
+    const doc = await prisma.document.create({
+      data: {
+        id: documentId,
+        filename: input.filename,
+        mimeType: input.mimeType,
+        sizeBytes,
+        storagePath,
+        extractionStatus: ExtractionStatus.PENDING,
+      },
     });
 
     return this.runExtraction(doc.id);

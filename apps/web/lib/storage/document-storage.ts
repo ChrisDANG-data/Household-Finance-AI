@@ -55,6 +55,12 @@ export async function saveDocumentFile(
 
 /** Load document bytes from local disk or Vercel Blob (by stored path/URL). */
 export async function readDocumentFile(storagePath: string): Promise<Buffer> {
+  if (storagePath === "pending" || storagePath.startsWith("pending:")) {
+    throw new AppError("Document file was not stored successfully", {
+      code: "STORAGE_ERROR",
+      statusCode: 500,
+    });
+  }
   if (isRemoteStoragePath(storagePath)) {
     return readDocumentFileFromBlob(storagePath);
   }
