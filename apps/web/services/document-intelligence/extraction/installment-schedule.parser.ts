@@ -44,6 +44,9 @@ const MONTH_NAME_DATE_RE =
 
 const ISO_DATE_RE = /\b(20\d{2})-(\d{2})-(\d{2})\b/;
 
+/** US/CA style 05/26/2026 or 5-26-2026 */
+const NUMERIC_DATE_RE = /\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/;
+
 const MONEY_RE = /\$?\s*([\d,]+\.\d{2})/g;
 
 export interface ParseInstallmentOptions {
@@ -69,6 +72,14 @@ function parseIsoDate(match: RegExpExecArray): string | null {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+function parseNumericUsDate(match: RegExpExecArray): string | null {
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  const year = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 function extractDueDate(line: string): string | null {
   const monthMatch = MONTH_NAME_DATE_RE.exec(line);
   MONTH_NAME_DATE_RE.lastIndex = 0;
@@ -78,7 +89,24 @@ function extractDueDate(line: string): string | null {
   ISO_DATE_RE.lastIndex = 0;
   if (isoMatch) return parseIsoDate(isoMatch);
 
+  const numericMatch = NUMERIC_DATE_RE.exec(line);
+  NUMERIC_DATE_RE.lastIndex = 0;
+  if (numericMatch) return parseNumericUsDate(numericMatch);
+
   return null;
+}
+
+/** OCR often splits amounts onto the next line — only merge lines without a new due date. */
+function amountsNearLine(lines: string[], index: number): number[] {
+  const onLine = amountsOnLine(lines[index]);
+  if (onLine.length > 0) return onLine;
+
+  const parts = [lines[index]];
+  for (let j = index + 1; j <= index + 2 && j < lines.length; j++) {
+    if (extractDueDate(lines[j])) break;
+    parts.push(lines[j]);
+  }
+  return amountsOnLine(parts.join(" "));
 }
 
 function amountsOnLine(line: string): number[] {
@@ -109,16 +137,20 @@ function parseLines(
   label: { name: string; category: string },
 ): ParsedInstallmentObligation[] {
   const installments: ParsedInstallmentObligation[] = [];
+  const lines = text.split(/\r?\n/);
 
-  for (const line of text.split(/\r?\n/)) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const startDate = extractDueDate(line);
     if (!startDate) continue;
 
-    const amounts = amountsOnLine(line);
+    const amounts = amountsNearLine(lines, i);
     if (amounts.length === 0) continue;
 
     const amount = amounts[amounts.length - 1];
-    const installmentNum = line.trim().match(/^0?(\d{1,2})\b/)?.[1];
+    const installmentNum =
+      line.trim().match(/^0?(\d{1,2})\b/)?.[1] ??
+      line.match(/\binstallment\s*0?(\d{1,2})\b/i)?.[1];
 
     installments.push({
       name: label.name,

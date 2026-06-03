@@ -139,11 +139,17 @@ export function ObligationReviewDialog({
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Tip: finite <strong>payment plans</strong> (e.g. 6 installments with
-                specific dates) should be multiple <strong>One-time</strong> rows — not
-                Monthly. Use <strong>Monthly</strong> only for ongoing bills with no end
-                date.
+                Tip: finite <strong>payment plans</strong> (e.g. 6 installments May–Oct)
+                need <strong>6 One-time</strong> rows with exact due dates — not Monthly.
+                If you see fewer than 6, use <strong>Add payment</strong> for missing
+                dates before confirming.
               </p>
+              {rows.length > 0 && rows.length < 6 ? (
+                <p className="text-xs text-amber-700 dark:text-amber-400" role="status">
+                  Detected {rows.length} payment(s). This insurance schedule usually has
+                  6 — add any missing installments below.
+                </p>
+              ) : null}
               <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full min-w-[720px] text-sm">
                   <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
