@@ -57,9 +57,34 @@ export function DocumentUploadPanel() {
     setError(null);
     setSavedMessage(null);
     try {
-      const doc = await uploadDocument(file);
+      const result = await uploadDocument(file);
       router.refresh();
-      await openReview(doc.id, doc.filename);
+
+      const parts: string[] = [];
+      if (result.chunksIndexed > 0) {
+        parts.push(`Indexed ${result.chunksIndexed} search chunk(s)`);
+      }
+      if (result.obligationsSaved > 0) {
+        parts.push(
+          `Saved ${result.obligationsSaved} payment(s) and ledger event(s)`,
+        );
+      }
+      if (parts.length > 0) {
+        setSavedMessage(parts.join(". ") + ".");
+      }
+      if (result.warnings.length > 0) {
+        setError(result.warnings.join(" "));
+      }
+
+      if (result.detectedObligations.length > 0) {
+        setReviewDocId(result.document.id);
+        setReviewFilename(result.document.filename);
+        setReviewObligations(result.detectedObligations);
+        setReviewOpen(true);
+        setReviewLoading(false);
+      } else if (result.document.extractionStatus === "COMPLETED") {
+        await openReview(result.document.id, result.document.filename);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -76,8 +101,9 @@ export function DocumentUploadPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            PDF or image (PNG, JPEG, WebP, TIFF). Text is extracted automatically.
-            You will review detected payments before they are added to your ledger.
+            PDF or image (PNG, JPEG, WebP, TIFF). After upload we extract text,
+            index chunks for AI Q&A, and save detected payments to your ledger.
+            You can review or edit payments in the dialog.
           </p>
           <input
             ref={inputRef}

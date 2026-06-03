@@ -2,6 +2,7 @@ import type { AiProvider } from "@/lib/ai-provider";
 import type { ApiResponse } from "@/types/api";
 import type { SerializedDocument, SerializedObligation } from "@/lib/serializers";
 import type {
+  DocumentUploadResponse,
   ExtractionConfirmResult,
   ExtractionPreviewResult,
   ReviewableObligation,
@@ -33,16 +34,15 @@ export async function fetchDocuments(): Promise<SerializedDocument[]> {
   return data.documents;
 }
 
-export async function uploadDocument(file: File): Promise<SerializedDocument> {
+export async function uploadDocument(file: File): Promise<DocumentUploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  const data = await parseApi<{ document: SerializedDocument }>(
+  return parseApi<DocumentUploadResponse>(
     await fetch("/api/documents/upload", {
       method: "POST",
       body: formData,
     }),
   );
-  return data.document;
 }
 
 export async function previewDocumentExtraction(

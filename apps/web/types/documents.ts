@@ -1,3 +1,5 @@
+import type { SerializedDocument } from "@/lib/serializers";
+
 export type DocumentMimeType =
   | "application/pdf"
   | "image/png"
@@ -71,4 +73,13 @@ export interface ExtractionConfirmResult {
   documentId: string;
   savedToDb: number;
   message: string;
+}
+
+/** Returned after upload + full document intelligence pipeline. */
+export interface DocumentUploadResponse {
+  document: SerializedDocument;
+  chunksIndexed: number;
+  obligationsSaved: number;
+  detectedObligations: ReviewableObligation[];
+  warnings: string[];
 }

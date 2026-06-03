@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { saveDocumentFile } from "@/lib/storage/document-storage";
 import { serializeDocument, type SerializedDocument } from "@/lib/serializers";
 import { textExtractionService } from "@/services/document-intelligence/extraction/text-extraction.service";
-import type { DocumentMimeType } from "@/types/documents";
+import type { ExtractedObligation } from "@/services/document-intelligence/extraction/document-extraction.service";
+import type { DocumentMimeType, ReviewableObligation } from "@/types/documents";
 import { documentUploadService } from "@/services/document-intelligence/upload/document-upload.service";
 import { AppError } from "@/utils/errors";
 import { env } from "@/lib/env";
@@ -16,6 +17,31 @@ export interface UploadDocumentInput {
   filename: string;
   mimeType: DocumentMimeType;
   buffer: Buffer;
+}
+
+export interface DocumentProcessSummary {
+  chunksIndexed: number;
+  obligationsSaved: number;
+  detectedObligations: ReviewableObligation[];
+  warnings: string[];
+}
+
+export interface DocumentUploadResult {
+  document: SerializedDocument;
+  processing: DocumentProcessSummary;
+}
+
+function toReviewable(ob: ExtractedObligation): ReviewableObligation {
+  return {
+    name: ob.name,
+    category: ob.category,
+    amount: ob.amount,
+    currency: ob.currency,
+    frequency: ob.frequency,
+    startDate: ob.startDate,
+    endDate: ob.endDate,
+    notes: ob.notes,
+  };
 }
 
 export class DocumentRepository {
@@ -37,7 +63,7 @@ export class DocumentRepository {
     return serializeDocument(doc);
   }
 
-  async upload(input: UploadDocumentInput): Promise<SerializedDocument> {
+  async upload(input: UploadDocumentInput): Promise<DocumentUploadResult> {
     const sizeBytes = input.buffer.length;
     documentUploadService.validateMimeType(input.mimeType);
 
@@ -71,7 +97,7 @@ export class DocumentRepository {
     return this.runExtraction(doc.id);
   }
 
-  async runExtraction(documentId: string): Promise<SerializedDocument> {
+  async runExtraction(documentId: string): Promise<DocumentUploadResult> {
     const doc = await prisma.document.findUnique({ where: { id: documentId } });
     if (!doc) {
       throw new AppError("Document not found", {
@@ -79,6 +105,13 @@ export class DocumentRepository {
         statusCode: 404,
       });
     }
+
+    const processing: DocumentProcessSummary = {
+      chunksIndexed: 0,
+      obligationsSaved: 0,
+      detectedObligations: [],
+      warnings: [],
+    };
 
     try {
       const rawText = await textExtractionService.extractFromStorage(
@@ -95,10 +128,14 @@ export class DocumentRepository {
         },
       });
 
-      // Obligations are extracted on demand via /api/documents/extraction
-      // after the user reviews and confirms in the UI.
+      if (rawText.length === 0) {
+        return { document: serializeDocument(updated), processing };
+      }
 
-      return serializeDocument(updated);
+      processing.chunksIndexed = await this.indexForSearch(documentId, processing);
+      await this.extractAndPersistObligations(documentId, processing);
+
+      return { document: serializeDocument(updated), processing };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Extraction failed";
@@ -109,7 +146,52 @@ export class DocumentRepository {
           extractionError: message,
         },
       });
-      return serializeDocument(updated);
+      processing.warnings.push(message);
+      return { document: serializeDocument(updated), processing };
+    }
+  }
+
+  private async indexForSearch(
+    documentId: string,
+    processing: DocumentProcessSummary,
+  ): Promise<number> {
+    try {
+      const { documentEmbeddingService } = await import(
+        "@/services/document-intelligence/indexing/embedding.service"
+      );
+      const records = await documentEmbeddingService.indexDocument(documentId);
+      return records.length;
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Search indexing failed";
+      processing.warnings.push(
+        `RAG chunks not indexed: ${msg}. Scenario chat may not find this document.`,
+      );
+      return 0;
+    }
+  }
+
+  private async extractAndPersistObligations(
+    documentId: string,
+    processing: DocumentProcessSummary,
+  ): Promise<void> {
+    try {
+      const { documentExtractionService } = await import(
+        "@/services/document-intelligence/extraction/document-extraction.service"
+      );
+      const { payload, savedCount } =
+        await documentExtractionService.extractAndSave(documentId);
+      processing.obligationsSaved = savedCount;
+      processing.detectedObligations = payload.obligations.map(toReviewable);
+      if (savedCount === 0 && payload.obligations.length > 0) {
+        processing.warnings.push(
+          "Payments were detected but none had amount > 0 to save.",
+        );
+      }
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Obligation extraction failed";
+      processing.warnings.push(msg);
     }
   }
 }

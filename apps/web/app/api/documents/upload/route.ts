@@ -6,6 +6,7 @@ import type { DocumentMimeType } from "@/types/documents";
 import { isAllowedDocumentMimeType } from "@/utils/file";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 /** GET — list uploaded documents */
 export async function GET() {
@@ -37,12 +38,21 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const document = await documentRepository.upload({
+    const result = await documentRepository.upload({
       filename: file.name || "upload",
       mimeType: mimeType as DocumentMimeType,
       buffer,
     });
 
-    return jsonSuccess({ document }, { status: 201 });
+    return jsonSuccess(
+      {
+        document: result.document,
+        chunksIndexed: result.processing.chunksIndexed,
+        obligationsSaved: result.processing.obligationsSaved,
+        detectedObligations: result.processing.detectedObligations,
+        warnings: result.processing.warnings,
+      },
+      { status: 201 },
+    );
   });
 }
