@@ -61,6 +61,20 @@ export async function previewDocumentExtraction(
   );
 }
 
+/** Re-run detection from stored extracted text (does not save until you confirm). */
+export async function reanalyzeDocumentPayments(
+  documentId: string,
+): Promise<{
+  detectedObligations: ReviewableObligation[];
+  warnings: string[];
+}> {
+  return parseApi(
+    await fetch(`/api/documents/upload/${documentId}`, {
+      method: "POST",
+    }),
+  );
+}
+
 export async function confirmDocumentExtraction(
   documentId: string,
   obligations: ReviewableObligation[],

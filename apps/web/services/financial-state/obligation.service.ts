@@ -183,7 +183,29 @@ export class ObligationService {
   }
 
   async delete(id: string): Promise<void> {
-    await this.getById(id);
+    const row = await prisma.financialObligation.findUnique({ where: { id } });
+    if (!row) {
+      throw new AppError("Obligation not found", {
+        code: "NOT_FOUND",
+        statusCode: 404,
+      });
+    }
+
+    const eventWhere: {
+      startDate: Date;
+      amount: number;
+      category: string;
+      sourceDocumentId?: string;
+    } = {
+      startDate: row.startDate,
+      amount: row.amount,
+      category: row.category,
+    };
+    if (row.sourceDocumentId) {
+      eventWhere.sourceDocumentId = row.sourceDocumentId;
+    }
+
+    await prisma.financialEvent.deleteMany({ where: eventWhere });
     await prisma.financialObligation.delete({ where: { id } });
   }
 

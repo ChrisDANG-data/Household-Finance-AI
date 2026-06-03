@@ -409,7 +409,11 @@ export function FinancialEventForm() {
                     ) : (
                       <ArrowDownCircle className="size-4 shrink-0 text-rose-500" />
                     )}
-                    <h3 className="font-medium capitalize">{ev.category}</h3>
+                    <h3 className="font-medium capitalize">
+                      {typeof ev.metadata?.name === "string" && ev.metadata.name.trim()
+                        ? ev.metadata.name
+                        : ev.category}
+                    </h3>
                     <Badge variant="outline">{ev.frequency}</Badge>
                     <Badge variant="outline">
                       {ev.owner === "joint" ? "Partner A + Partner B" : (OWNER_LABELS[ev.owner] ?? ev.owner)}

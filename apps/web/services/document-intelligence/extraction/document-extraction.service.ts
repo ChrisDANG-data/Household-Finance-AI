@@ -6,6 +6,11 @@ import type { AiProvider } from "@/services/ai/llm/types";
 import { AppError } from "@/utils/errors";
 import { financialStatePersistence, DEFAULT_USER_ID } from "@/services/financial-state/financial-state.persistence";
 
+import {
+  parseInstallmentScheduleFromText,
+  resolveObligationsFromDocumentText,
+} from "./installment-schedule.parser";
+
 export interface ExtractedObligation {
   name: string;
   category: string;
@@ -37,19 +42,24 @@ const EXTRACTION_PROMPT = `You are a financial document parser. Extract all paym
 For each obligation found, return a JSON array of objects with these fields:
 - name: string (vendor/payee name)
 - category: string (specific slug, e.g. house_insurance, car_insurance, property_tax, rent, utilities)
-- amount: number (payment amount per occurrence, no currency symbol)
+- amount: number (payment amount per occurrence — use Total Amount Due when a table lists premium + fees)
 - currency: string (e.g. "CAD", "USD")
 - frequency: string (one of: monthly, weekly, quarterly, yearly, one_time)
-- startDate: string (YYYY-MM-DD — first payment due date)
+- startDate: string (YYYY-MM-DD — due date for that payment)
 - endDate: string | null (YYYY-MM-DD if specified, null otherwise)
 - notes: string | null (any relevant details)
 
 Rules:
 - Extract ONLY what is explicitly stated in the document
 - Do NOT invent or assume values
-- For quarterly schedules (e.g. Aug, Nov, Feb), use frequency "quarterly" and startDate = first installment date
-- For semi-annual or irregular schedules (e.g. property tax due Nov 1 and Feb 1), create SEPARATE entries with frequency "one_time" and the exact due date as startDate
-- If the initial payment differs from later installments, create separate entries (one_time for initial, quarterly/monthly for recurring)
+- PAYMENT PLANS / INSTALLMENT TABLES (e.g. "Installment 01–06", "Scheduled Due Date", finite plan cost):
+  - Do NOT use frequency "monthly" for the whole plan
+  - Create ONE entry per installment row with frequency "one_time", startDate = that row's due date, amount = Total Amount Due (or premium + fees)
+  - If the down payment amount differs from later installments, each row is still its own one_time entry
+  - Set endDate null on each one_time row
+- ONGOING subscriptions (no end date, repeats indefinitely): use monthly/weekly/quarterly/yearly with startDate = first due date
+- For quarterly schedules (e.g. Aug, Nov, Feb every year), use frequency "quarterly" and startDate = first installment date
+- For irregular non-plan dates (e.g. property tax Nov 1 and Feb 1), create SEPARATE one_time entries
 - Return ONLY a valid JSON array, no other text`;
 
 function normalizeObligation(raw: ExtractedObligation): ExtractedObligation {
@@ -102,20 +112,34 @@ export class DocumentExtractionService {
       user: `Document text:\n\n${doc.extractedText}`,
     });
 
-    let obligations: ExtractedObligation[];
+    let llmObligations: ExtractedObligation[] = [];
     try {
       const parsed = JSON.parse(
         responseText.replace(/```json?\s*/g, "").replace(/```/g, "").trim(),
       );
-      obligations = Array.isArray(parsed) ? parsed.map(normalizeObligation) : [];
+      llmObligations = Array.isArray(parsed) ? parsed.map(normalizeObligation) : [];
     } catch {
-      obligations = [];
+      llmObligations = [];
     }
+
+    const scheduleOnly = parseInstallmentScheduleFromText(doc.extractedText);
+    if (scheduleOnly.length >= 2) {
+      return {
+        documentId,
+        rawText: doc.extractedText,
+        obligations: scheduleOnly.map(normalizeObligation),
+      };
+    }
+
+    const resolved = resolveObligationsFromDocumentText(
+      doc.extractedText,
+      llmObligations,
+    );
 
     return {
       documentId,
       rawText: doc.extractedText,
-      obligations,
+      obligations: resolved.map(normalizeObligation),
     };
   }
 
@@ -197,7 +221,9 @@ export class DocumentExtractionService {
     savedCount: number;
   }> {
     const payload = await this.extract(documentId, options);
-    const savedCount = await this.saveObligations(documentId, payload.obligations);
+    const savedCount = await this.saveObligations(documentId, payload.obligations, {
+      replaceExisting: true,
+    });
     return { payload, savedCount };
   }
 }

@@ -64,9 +64,9 @@ export function DocumentUploadPanel() {
       if (result.chunksIndexed > 0) {
         parts.push(`Indexed ${result.chunksIndexed} search chunk(s)`);
       }
-      if (result.obligationsSaved > 0) {
+      if (result.detectedObligations.length > 0) {
         parts.push(
-          `Saved ${result.obligationsSaved} payment(s) and ledger event(s)`,
+          `Found ${result.detectedObligations.length} payment(s) — confirm in the dialog to add to your ledger`,
         );
       }
       if (parts.length > 0) {
@@ -102,8 +102,8 @@ export function DocumentUploadPanel() {
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
             PDF or image (PNG, JPEG, WebP, TIFF). After upload we extract text,
-            index chunks for AI Q&A, and save detected payments to your ledger.
-            You can review or edit payments in the dialog.
+            index chunks for AI Q&A, then open a review dialog so you can confirm
+            payments before they are written to the ledger.
           </p>
           <input
             ref={inputRef}

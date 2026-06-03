@@ -179,13 +179,12 @@ export class DocumentRepository {
       const { documentExtractionService } = await import(
         "@/services/document-intelligence/extraction/document-extraction.service"
       );
-      const { payload, savedCount } =
-        await documentExtractionService.extractAndSave(documentId);
-      processing.obligationsSaved = savedCount;
+      const payload = await documentExtractionService.extract(documentId);
       processing.detectedObligations = payload.obligations.map(toReviewable);
-      if (savedCount === 0 && payload.obligations.length > 0) {
+      processing.obligationsSaved = 0;
+      if (payload.obligations.length === 0) {
         processing.warnings.push(
-          "Payments were detected but none had amount > 0 to save.",
+          "No payment schedule detected. Use Review payments to analyze again or add events manually on the Ledger.",
         );
       }
     } catch (error) {

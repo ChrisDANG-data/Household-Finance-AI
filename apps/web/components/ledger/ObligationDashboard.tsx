@@ -61,7 +61,9 @@ export function ObligationDashboard({
           <p className="text-sm text-muted-foreground">
             Total obligation outflow for{" "}
             <span className="font-mono text-foreground">{month}</span>{" "}
-            (from uploaded documents only — not manual/Telegram ledger events).
+            (from confirmed document uploads). Forecast and &quot;Recorded
+            events&quot; below use the same ledger events after you confirm in
+            Documents → Review payments.
           </p>
           <p className="text-3xl font-semibold tracking-tight">
             {formatMoney(summary.total_monthly_obligations, "CAD")}

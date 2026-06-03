@@ -139,9 +139,10 @@ export function ObligationReviewDialog({
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Tip: use <strong>Quarterly</strong> for every-3-month schedules, or
-                add multiple <strong>One-time</strong> rows for specific due dates
-                (e.g. property tax Nov 1 and Feb 1).
+                Tip: finite <strong>payment plans</strong> (e.g. 6 installments with
+                specific dates) should be multiple <strong>One-time</strong> rows — not
+                Monthly. Use <strong>Monthly</strong> only for ongoing bills with no end
+                date.
               </p>
               <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full min-w-[720px] text-sm">

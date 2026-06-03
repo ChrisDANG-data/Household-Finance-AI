@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DocumentReanalyzeButton } from "@/components/documents/DocumentReanalyzeButton";
 import { DocumentReviewButton } from "@/components/documents/DocumentReviewButton";
 import type { SerializedDocument } from "@/lib/serializers";
 
@@ -67,11 +68,17 @@ export function DocumentLibrary({ documents }: DocumentLibraryProps) {
               </Badge>
             </div>
             {doc.extractedText ? (
-              <DocumentReviewButton
-                documentId={doc.id}
-                filename={doc.filename}
-                hasExtractedText
-              />
+              <div className="flex flex-wrap gap-2">
+                <DocumentReviewButton
+                  documentId={doc.id}
+                  filename={doc.filename}
+                  hasExtractedText
+                />
+                <DocumentReanalyzeButton
+                  documentId={doc.id}
+                  filename={doc.filename}
+                />
+              </div>
             ) : null}
             {doc.extractionError ? (
               <p className="text-xs text-destructive">{doc.extractionError}</p>

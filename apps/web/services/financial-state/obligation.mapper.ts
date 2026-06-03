@@ -19,9 +19,13 @@ export function isValidFrequency(
 export function obligationToFinancialEvent(
   obligation: DbFinancialObligation,
 ): FinancialEvent {
+  const frequency = obligation.frequency as FinancialEventFrequency;
+  const type =
+    frequency === "one_time" ? "one_time_expense" : "recurring_expense";
+
   return {
     id: obligation.id,
-    type: "recurring_expense",
+    type,
     category: obligation.category,
     amount: Number(obligation.amount),
     currency: obligation.currency,
