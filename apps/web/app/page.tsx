@@ -1,143 +1,91 @@
-import Link from "next/link";
 import {
-  ArrowRight,
   BarChart3,
+  Cloud,
   FileText,
-  Shield,
+  Landmark,
   Sparkles,
   Wallet,
-  Zap,
 } from "lucide-react";
 
-import { EngineModuleCard } from "@/components/EngineModuleCard";
-import { Button } from "@/components/ui/button";
-
-const ENGINES = [
-  {
-    name: "Document Intelligence",
-    href: "/documents",
-    apiPath: "/api/documents/upload",
-    description: "Upload contracts & receipts. OCR, extract obligations, RAG search.",
-    icon: FileText,
-    gradient: "from-violet-500/20 to-purple-600/10",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    name: "Financial State",
-    href: "/ledger",
-    apiPath: "/api/financial-state/events",
-    description: "Your canonical ledger — income, expenses, investments.",
-    icon: Wallet,
-    gradient: "from-amber-500/20 to-orange-600/10",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    name: "Forecast Simulation",
-    href: "/simulation",
-    apiPath: "/api/simulation/forecast",
-    description: "6-month cash-flow charts, what-if scenarios, AI Q&A.",
-    icon: BarChart3,
-    gradient: "from-emerald-500/20 to-teal-600/10",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-    featured: true,
-  },
-] as const;
+import { HomeFeatureCard } from "@/components/home/HomeFeatureCard";
+import { HomeHeroWave } from "@/components/home/HomeHeroWave";
 
 const FEATURES = [
   {
-    icon: Shield,
-    title: "Deterministic math",
-    text: "Forecasts run on your data — not guessed by AI.",
+    name: "Documents",
+    href: "/documents",
+    description:
+      "Upload contracts and receipts — obligations flow straight into your ledger.",
+    icon: FileText,
   },
   {
-    icon: Sparkles,
-    title: "AI explanations",
-    text: "Ask natural-language questions about expenses & contracts.",
+    name: "Ledger",
+    href: "/ledger",
+    description:
+      "Your canonical ledger — income, expenses, and investments in one place.",
+    icon: Wallet,
   },
   {
-    icon: Zap,
-    title: "Document → ledger",
-    text: "Upload a PDF; obligations flow into your financial events.",
+    name: "Balances",
+    href: "/balances",
+    description:
+      "Plaid-linked account balances and snapshot history over time.",
+    icon: Landmark,
+  },
+  {
+    name: "Forecast",
+    href: "/simulation",
+    description:
+      "Six-month cash-flow charts, what-if scenarios, and natural-language Q&A.",
+    icon: BarChart3,
+    featured: true,
   },
 ] as const;
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-      {/* Hero */}
-      <section className="relative mb-16 overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-card via-card to-emerald-500/5 p-8 sm:p-12 glow-border">
-        <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="relative max-w-2xl">
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-            <Sparkles className="size-3.5" />
-            AI-powered household finance
+    <div className="fi-home-page">
+      <section className="fi-cloudme-hero relative overflow-hidden pb-28 pt-28 sm:pb-36 sm:pt-32">
+        <div className="pointer-events-none absolute -left-16 top-20 size-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute right-0 top-10 size-72 rounded-full bg-emerald-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-32 left-1/4 size-40 rounded-full bg-teal-200/15 blur-2xl fi-orb" />
+        <Cloud className="pointer-events-none absolute right-[12%] top-[28%] size-24 text-white/10 sm:size-32" />
+        <Cloud className="pointer-events-none absolute left-[8%] top-[38%] size-16 text-white/8 sm:size-20" />
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 text-center sm:px-8">
+          <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white/95 backdrop-blur-sm">
+            <Sparkles className="size-4" />
+            Household Financial Intelligence
           </p>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+
+          <h1 className="text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
             Know your cash flow.
             <br />
-            <span className="gradient-text">Plan with confidence.</span>
-          </h1>
-          <p className="mt-4 text-lg text-muted-foreground leading-relaxed">
-            Upload documents, build your ledger, run deterministic forecasts,
-            and ask AI about your finances — all in one place.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
-              render={<Link href="/simulation" />}
-              nativeButton={false}
+            <span
+              className="font-normal italic text-white/95"
+              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
             >
-              Open Forecast &amp; AI
-              <ArrowRight className="size-4" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              render={<Link href="/documents" />}
-              nativeButton={false}
-            >
-              Upload documents
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Feature pills */}
-      <section className="mb-14 grid gap-4 sm:grid-cols-3">
-        {FEATURES.map(({ icon: Icon, title, text }) => (
-          <div
-            key={title}
-            className="glass-card flex gap-4 rounded-2xl p-5 transition hover:border-emerald-500/30"
-          >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-              <Icon className="size-5" />
+              Act on it.
             </span>
-            <div>
-              <h3 className="font-semibold">{title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{text}</p>
-            </div>
-          </div>
-        ))}
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">
+            Deterministic forecasts from your ledger. Ask AI about affordability,
+            balance trends, and what-if scenarios — numbers stay exact.
+          </p>
+        </div>
+
+        <HomeHeroWave />
       </section>
 
-      {/* Engine modules */}
-      <section>
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">Modules</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Three engines — documents, ledger, forecast
-            </p>
+      <section className="relative bg-[#f0fdf8] px-4 pb-20 pt-4 dark:bg-[#071a10] sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-4">
+            {FEATURES.map((feature) => (
+              <HomeFeatureCard key={feature.name} {...feature} />
+            ))}
           </div>
         </div>
-        <ul className="grid list-none gap-5 p-0 sm:grid-cols-2 lg:grid-cols-3">
-          {ENGINES.map((engine) => (
-            <li key={engine.name} className={"featured" in engine && engine.featured ? "sm:col-span-2 lg:col-span-1" : ""}>
-              <EngineModuleCard {...engine} />
-            </li>
-          ))}
-        </ul>
       </section>
     </div>
   );

@@ -6,7 +6,7 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "predev": "node ../../scripts/check-node.mjs && node scripts/ensure-ffmpeg.mjs",
+    "predev": "node ../../scripts/check-node.mjs && node scripts/ensure-ffmpeg.mjs && node scripts/ensure-dev-port.mjs",
     "dev": "next dev --hostname 0.0.0.0 --port 3000",
     "build": "npm exec prisma -- generate && next build",
     "start": "next start",

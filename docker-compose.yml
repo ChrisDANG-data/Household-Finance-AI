@@ -42,6 +42,7 @@ services:
       - ./services/langgraph-orchestrator:/app
     environment:
       PYTHONUNBUFFERED: "1"
+      APP_WEB_BASE_URL: "http://host.docker.internal:3000"
     depends_on:
       postgres:
         condition: service_healthy

@@ -56,7 +56,14 @@ export function classifyIntent(message: string): ScenarioIntent {
     /\bwhat happens if\b/.test(text) ||
     /\bwhat would happen\b/.test(text) ||
     /\bsuppose i\b/.test(text) ||
-    /\bif i (buy|get|purchase|take|start)\b/.test(text)
+    /\bif i (buy|get|purchase|take|start|invest|increase)\b/.test(text)
+  ) {
+    return "what_if_simulation";
+  }
+
+  if (
+    /\b(can i|could i|should i)\b/.test(text) &&
+    /\b(invest|investment|increase|contribute|contribution)\b/.test(text)
   ) {
     return "what_if_simulation";
   }
@@ -72,7 +79,8 @@ export function classifyIntent(message: string): ScenarioIntent {
 }
 
 function extractAmount(text: string): number | undefined {
-  const cadMatch = /\$?\s*([\d,]+(?:\.\d{1,2})?)\s*(?:cad|dollars?)?/i.exec(text);
+  const cadMatch =
+    /\$?\s*([\d,]+(?:\.\d{1,2})?)\s*\$?\s*(?:cad|dollars?)?/i.exec(text);
   if (cadMatch) {
     const value = Number(cadMatch[1].replace(/,/g, ""));
     if (Number.isFinite(value) && value > 0) return value;
@@ -158,11 +166,25 @@ function extractEventType(text: string): string | undefined {
   return undefined;
 }
 
+function isInvestmentScenario(text: string): boolean {
+  return /\b(invest|investment|tfsa|resp|rrsp|contribution)\b/i.test(text);
+}
+
 function extractModification(
   text: string,
   intent: ScenarioIntent,
 ): ScenarioParameters["modification"] {
+  if (
+    isInvestmentScenario(text) &&
+    /\b(increase|add|extra|more|contribute|put)\b/i.test(text)
+  ) {
+    return "add_one_time_investment";
+  }
+
   if (intent === "affordability_check") {
+    if (/\/\s*month\b|\bper\s+month\b|\bmonthly\b/i.test(text)) {
+      return "add_recurring_expense";
+    }
     return "add_one_time_expense";
   }
 

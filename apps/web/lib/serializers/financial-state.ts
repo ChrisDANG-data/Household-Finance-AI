@@ -86,6 +86,8 @@ export function serializeTimeline(
     expense_total: month.expense_total,
     investment_total: month.investment_total,
     net_cash_flow: month.net_cash_flow,
+    opening_balance: month.opening_balance,
+    closing_balance: month.closing_balance,
     active_events: month.active_events.map(serializeFinancialEvent),
   }));
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   buildBasicScenarioState,
@@ -8,6 +8,10 @@ import {
 import { classifyIntent, parseScenarioMessage } from "../intent-parser";
 import { applyScenarioToState } from "../scenario-builder";
 import { handleScenarioMessage } from "../orchestrator";
+
+vi.mock("@/services/langgraph/orchestrator-client", () => ({
+  orchestrateWithLangGraph: vi.fn().mockResolvedValue(null),
+}));
 
 describe("Scenario Chat — intent parser", () => {
   it("classifies affordability questions", () => {
@@ -35,6 +39,16 @@ describe("Scenario Chat — intent parser", () => {
     expect(parsed.intent).toBe("affordability_check");
     expect(parsed.parameters.amount).toBe(3000);
     expect(parsed.parameters.target_month).toMatch(/-08$/);
+  });
+
+  it("parses investment increase as what-if with one-time investment", () => {
+    const parsed = parseScenarioMessage(
+      "Can I increase my investment 10000$ in August?",
+    );
+    expect(parsed.intent).toBe("what_if_simulation");
+    expect(parsed.parameters.amount).toBe(10000);
+    expect(parsed.parameters.target_month).toMatch(/-08$/);
+    expect(parsed.parameters.modification).toBe("add_one_time_investment");
   });
 
   it("extracts income percent change", () => {

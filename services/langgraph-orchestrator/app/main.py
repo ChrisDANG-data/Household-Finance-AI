@@ -1,8 +1,12 @@
-from typing import Dict, Any, TypedDict
+from typing import Any, Dict
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-from langgraph.graph import StateGraph, END
+
+from app.graph import build_graph
+from app.state import GraphState
+
+workflow = build_graph()
 
 
 class OrchestrateRequest(BaseModel):
@@ -11,73 +15,20 @@ class OrchestrateRequest(BaseModel):
     months: int = 12
     forecast_start_month: str | None = None
     ai_provider: str | None = None
+    analyst_mode: str = "auto"
     financial_state: Dict[str, Any] = Field(default_factory=dict)
 
 
-class GraphState(TypedDict):
-    message: str
-    intent: str
-    context: str
-    policy_notes: str
-    answer: str
-    recommendation: str
-    confidence: float
+app = FastAPI(title="LangGraph Orchestrator", version="0.2.0")
 
 
-def planner_agent(state: GraphState) -> GraphState:
-    msg = state["message"].lower()
-    intent = "general_finance_question"
-    if "afford" in msg:
-        intent = "affordability_check"
-    elif "what if" in msg or "if i" in msg:
-        intent = "what_if_simulation"
-    elif "why" in msg or "explain" in msg:
-        intent = "explanation_request"
-    state["intent"] = intent
-    return state
-
-
-def retrieval_agent(state: GraphState) -> GraphState:
-    # Placeholder: production version should call apps/web read-only endpoints.
-    state["context"] = "Read-only financial snapshot context prepared."
-    return state
-
-
-def policy_agent(state: GraphState) -> GraphState:
-    state["policy_notes"] = (
-        "Use deterministic financial outputs as source of truth; no DB writes."
-    )
-    return state
-
-
-def composer_agent(state: GraphState) -> GraphState:
-    state["answer"] = (
-        f"Intent: {state['intent']}. {state['context']} {state['policy_notes']}"
-    )
-    state["recommendation"] = (
-        "Review latest forecast timeline and risk summary before decisions."
-    )
-    state["confidence"] = 0.75
-    return state
-
-
-def build_graph():
-    graph = StateGraph(GraphState)
-    graph.add_node("plannerAgent", planner_agent)
-    graph.add_node("retrievalAgent", retrieval_agent)
-    graph.add_node("policyAgent", policy_agent)
-    graph.add_node("composerAgent", composer_agent)
-
-    graph.set_entry_point("plannerAgent")
-    graph.add_edge("plannerAgent", "retrievalAgent")
-    graph.add_edge("retrievalAgent", "policyAgent")
-    graph.add_edge("policyAgent", "composerAgent")
-    graph.add_edge("composerAgent", END)
-    return graph.compile()
-
-
-app = FastAPI(title="LangGraph Orchestrator", version="0.1.0")
-workflow = build_graph()
+@app.get("/")
+def root():
+    return {
+        "service": "LangGraph Orchestrator",
+        "health": "/health",
+        "orchestrate": "POST /orchestrate",
+    }
 
 
 @app.get("/health")
@@ -86,20 +37,27 @@ def health():
 
 
 @app.post("/orchestrate")
-def orchestrate(body: OrchestrateRequest):
+async def orchestrate(body: OrchestrateRequest):
     initial_state: GraphState = {
         "message": body.message,
+        "user_id": body.user_id,
+        "months": body.months,
+        "forecast_start_month": body.forecast_start_month,
+        "analyst_mode": body.analyst_mode,
         "intent": "general_finance_question",
-        "context": "",
-        "policy_notes": "",
+        "routes": [],
+        "snapshots": {},
+        "specialist_outputs": {},
+        "agents_used": [],
         "answer": "",
         "recommendation": "",
         "confidence": 0.0,
     }
-    out = workflow.invoke(initial_state)
+    out = await workflow.ainvoke(initial_state)
     return {
         "answer": out["answer"],
         "recommendation": out["recommendation"],
         "intent": out["intent"],
         "confidence": out["confidence"],
+        "agents_used": out.get("agents_used") or [],
     }

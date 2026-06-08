@@ -23,6 +23,7 @@ interface ScenarioChatBody {
   use_llm?: boolean;
   stream?: boolean;
   ai_provider?: "claude" | "gemini";
+  analyst_mode?: "auto" | "cost" | "investment" | "payments";
 }
 
 async function resolveFinancialState(body: ScenarioChatBody): Promise<FinancialState> {
@@ -65,6 +66,7 @@ async function runScenarioChat(body: ScenarioChatBody) {
     forecast_start_month: body.forecast_start_month,
     use_llm: body.use_llm,
     ai_provider: body.ai_provider,
+    analyst_mode: body.analyst_mode,
   });
 }
 

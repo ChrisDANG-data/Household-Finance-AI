@@ -1,0 +1,238 @@
+{
+  "name": "Eval tutorial — echo (no AI agent)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Eval tutorial\n\n**Publish fix:** Manual Trigger satisfies n8n Cloud (Eval Trigger alone cannot Publish).\n\n1. Data tables → `eval_echo` → import CSV\n2. **Eval Trigger** + **Set Outputs** → pick `eval_echo`\n3. **Save** → **Publish**\n4. **Evaluations** tab → Set up evaluation → **Run Test**\n5. Check **Executions** (Editor won't animate)\n\n**Manual test:** Execute workflow (uses sample row, skips Set Metrics).",
+        "height": 340,
+        "width": 440,
+        "color": 5
+      },
+      "id": "a1b2c3d4-echo-sticky-note",
+      "name": "Setup instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [80, 60]
+    },
+    {
+      "parameters": {},
+      "id": "f6a7b8c9-manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [280, 480]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sample-msg",
+              "name": "message",
+              "value": "hello world",
+              "type": "string"
+            },
+            {
+              "id": "sample-exp",
+              "name": "expected_output",
+              "value": "Echo: hello world",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "a7b8c9d0-sample-row",
+      "name": "Set Sample Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 480]
+    },
+    {
+      "parameters": {
+        "source": "dataTable",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "limitRows": false
+      },
+      "id": "b2c3d4e5-eval-trigger",
+      "name": "Eval Trigger",
+      "type": "n8n-nodes-base.evaluationTrigger",
+      "typeVersion": 4.7,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "out-echo",
+              "name": "output",
+              "value": "={{ 'Echo: ' + $json.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c3d4e5f6-fake-reply",
+      "name": "Build Fake Reply",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [720, 380]
+    },
+    {
+      "parameters": {
+        "operation": "checkIfEvaluating"
+      },
+      "id": "b8c9d0e1-check-eval",
+      "name": "Check if Evaluating",
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [920, 380]
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "metric": "stringSimilarity",
+        "expectedAnswer": "={{ $('Eval Trigger').item.json.expected_output }}",
+        "actualAnswer": "={{ $json.output }}"
+      },
+      "id": "d4e5f6a7-set-metrics",
+      "name": "Set Metrics",
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [1120, 280]
+    },
+    {
+      "parameters": {
+        "operation": "setOutputs",
+        "source": "dataTable",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "outputs": {
+          "values": [
+            {
+              "outputName": "actual_output",
+              "outputValue": "={{ $('Build Fake Reply').item.json.output }}"
+            },
+            {
+              "outputName": "similarity_score",
+              "outputValue": "={{ $json.score ?? $json.stringSimilarity }}"
+            },
+            {
+              "outputName": "pass_fail",
+              "outputValue": "={{ ($json.score ?? $json.stringSimilarity ?? 0) >= 0.99 ? 'Pass' : 'Fail' }}"
+            }
+          ]
+        }
+      },
+      "id": "e5f6a7b8-set-outputs",
+      "name": "Set Outputs",
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [1320, 280]
+    },
+    {
+      "parameters": {},
+      "id": "c9d0e1f2-manual-done",
+      "name": "Manual Test Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1120, 480]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Sample Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Sample Row": {
+      "main": [
+        [
+          {
+            "node": "Build Fake Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eval Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Fake Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fake Reply": {
+      "main": [
+        [
+          {
+            "node": "Check if Evaluating",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Evaluating": {
+      "main": [
+        [
+          {
+            "node": "Set Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual Test Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Metrics": {
+      "main": [
+        [
+          {
+            "node": "Set Outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

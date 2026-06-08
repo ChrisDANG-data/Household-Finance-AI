@@ -1,0 +1,102 @@
+{
+  "name": "Eval fallback — manual batch (no Evaluations tab)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Works on free / Starter n8n Cloud\n\nNo **Evaluations** tab needed.\n\n1. Data tables → `eval_echo` → import CSV\n2. **Get All Rows** → pick `eval_echo`\n3. **Publish** (Manual Trigger counts)\n4. Click **Execute workflow**\n5. Check **Get All Rows** / **Build Reply** output\n\nCompare `output` vs `expected_output` by eye, or read `pass_fail` on each item.",
+        "height": 280,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-manual-batch",
+      "name": "Setup instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [80, 60]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger-batch",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [280, 320]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "returnAll": true
+      },
+      "id": "get-all-rows",
+      "name": "Get All Rows",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [480, 320]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "out-echo",
+              "name": "output",
+              "value": "={{ 'Echo: ' + $json.message }}",
+              "type": "string"
+            },
+            {
+              "id": "pf",
+              "name": "pass_fail",
+              "value": "={{ ('Echo: ' + $json.message) === $json.expected_output ? 'Pass' : 'Fail' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "build-reply-batch",
+      "name": "Build Reply",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [680, 320]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Rows": {
+      "main": [
+        [
+          {
+            "node": "Build Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

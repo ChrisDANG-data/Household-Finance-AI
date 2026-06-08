@@ -3,15 +3,18 @@ import { llmComplete } from "@/services/ai/llm/llm.service";
 import type { AiProvider } from "@/services/ai/llm/types";
 import { prisma } from "@/lib/prisma";
 import { orchestrateWithLangGraph } from "@/services/langgraph/orchestrator-client";
+import { narrateSpecialistReport } from "@/services/langgraph/writer.service";
+import { env } from "@/lib/env";
 import { currentUtcMonth } from "@/services/financial-state/dates";
 import { computeRiskSignals } from "@/services/financial-state/risk";
 import { simulateForecast } from "@/services/financial-state/projection";
 import type { FinancialState } from "@/services/financial-state/state.types";
 
+import { ensureAffordabilitySummary } from "./affordability-summary";
+import { tryDeterministicLedgerAnswer } from "./deterministic-ledger";
 import { parseScenarioMessage } from "./intent-parser";
 import { tryCategoryPaymentAnswer } from "./category-lookup";
-import { tryDeterministicMonthAnswer } from "./monthly-lookup";
-import { tryPartnerLedgerAnswer } from "./partner-ledger-lookup";
+import { shouldUseLangGraph } from "./route-classifier";
 import { applyScenarioToState } from "./scenario-builder";
 import type {
   HandleScenarioMessageInput,
@@ -152,17 +155,7 @@ async function tryDocumentAnswer(
   provider?: AiProvider,
 ): Promise<DocumentAnswer | null> {
   try {
-    const partnerAnswer = await tryPartnerLedgerAnswer(message);
-    if (partnerAnswer) {
-      return { answer: partnerAnswer, hasDocumentContext: true };
-    }
-
-    const categoryAnswer = await tryCategoryPaymentAnswer(message);
-    if (categoryAnswer) {
-      return { answer: categoryAnswer, hasDocumentContext: true };
-    }
-
-    const deterministic = await tryDeterministicMonthAnswer(message);
+    const deterministic = await tryDeterministicLedgerAnswer(message);
     if (deterministic) {
       return { answer: deterministic, hasDocumentContext: true };
     }
@@ -192,6 +185,10 @@ async function tryDocumentAnswer(
           caller: "scenario-chat-document",
           system: `You are a concise financial assistant. Answer from the provided data.
 
+SCOPE (strict):
+- Only answer direct ledger lookups: totals, category payments, or month breakdowns for income/expenses/investments already recorded.
+- If the question is about affordability, what-if, increasing contributions, or simulating a new payment/investment, reply with exactly: NOT_A_LEDGER_LOOKUP
+
 DATE FILTERING (strict):
 - An event is active in month YYYY-MM ONLY if start_date <= last day of that month AND (end_date is null OR end_date >= first day of that month)
 - Example: start_date 2026-06-26 is NOT active in May 2026. start_date 2026-05-26 IS active in May 2026.
@@ -214,7 +211,11 @@ OUTPUT FORMAT:
           user: `${financialContext}${docContext ? `\n\nDocument excerpts:\n${docContext}` : ""}\n\nQuestion: ${message}`,
         });
 
-        return { answer: text.trim() || "Not found.", hasDocumentContext: true };
+        const trimmed = text.trim();
+        if (/NOT_A_LEDGER/i.test(trimmed)) {
+          return null;
+        }
+        return { answer: trimmed || "Not found.", hasDocumentContext: true };
       } catch (err) {
         const fallback = await tryCategoryPaymentAnswer(message);
         if (fallback) {
@@ -254,74 +255,152 @@ OUTPUT FORMAT:
  * Orchestrates intent parsing, deterministic engines, RAG retrieval,
  * and AI advisor explanations.
  */
+function buildLedgerResponse(
+  parsed: ReturnType<typeof parseScenarioMessage>,
+  baseline: ReturnType<typeof runEngines>,
+  answer: string,
+  route: "deterministic_ledger" | "ledger_llm",
+): ScenarioChatResponse {
+  const { timeline, risk } = baseline;
+  return {
+    intent: parsed.intent,
+    interpretation:
+      route === "deterministic_ledger"
+        ? "Answer from deterministic ledger lookup (no LLM)."
+        : "Answer based on your ledger and documents.",
+    financial_summary: "From your household ledger:",
+    risk_level: risk.risk_level,
+    explanation: answer,
+    recommendation: "",
+    orchestrator_route: route,
+    structured_data: {
+      timeline,
+      risk,
+      advice: {
+        summary: "From your household ledger:",
+        key_insights: [answer],
+        warnings: [],
+        recommendations: [
+          "You can ask follow-up questions about your documents or try a financial scenario.",
+        ],
+        explanation: answer,
+        confidence: route === "deterministic_ledger" ? 0.95 : 0.85,
+        tone: "neutral",
+      },
+    },
+  };
+}
+
 export async function handleScenarioMessage(
   input: HandleScenarioMessageInput,
 ): Promise<ScenarioChatResponse> {
-  const langGraphResult = await orchestrateWithLangGraph({
-    message: input.message,
-    user_id: input.user_id,
-    financial_state: input.financial_state,
-    months: input.months,
-    forecast_start_month: input.forecast_start_month,
-    ai_provider: input.ai_provider,
-  });
-  if (langGraphResult) {
-    const baseline = runEngines(
-      input.financial_state,
-      input.months ?? FORECAST_MONTHS_DEFAULT,
-      input.forecast_start_month,
-    );
-    return {
-      intent: langGraphResult.intent,
-      interpretation: "Answer generated by LangGraph orchestration over read-only snapshots.",
-      financial_summary: langGraphResult.answer,
-      risk_level: baseline.risk.risk_level,
-      explanation: langGraphResult.answer,
-      recommendation: langGraphResult.recommendation,
-      structured_data: {
-        timeline: baseline.timeline,
-        risk: baseline.risk,
-      },
-    };
-  }
-
   const parsed = parseScenarioMessage(input.message);
   const months = input.months ?? FORECAST_MONTHS_DEFAULT;
   const startMonth = input.forecast_start_month;
 
   const baseline = runEngines(input.financial_state, months, startMonth);
 
-  // Try to answer from uploaded documents first
-  const docAnswer = await tryDocumentAnswer(input.message, input.ai_provider);
-
-  if (docAnswer?.hasDocumentContext) {
-    const { risk } = baseline;
-    return {
-      intent: parsed.intent,
-      interpretation: "Answer based on your ledger and documents.",
-      financial_summary: "From your household ledger:",
-      risk_level: risk.risk_level,
-      explanation: docAnswer.answer,
-      recommendation: "",
-      structured_data: {
-        timeline: baseline.timeline,
-        risk,
-        advice: {
-          summary: "From your uploaded documents:",
-          key_insights: [docAnswer.answer],
-          warnings: [],
-          recommendations: [
-            "You can ask follow-up questions about your documents or try a financial scenario.",
-          ],
-          explanation: docAnswer.answer,
-          confidence: 0.85,
-          tone: "neutral",
-        },
-      },
-    };
+  // Hybrid step 1: fast deterministic ledger — skip when question needs multi-agent/advisor
+  const skipDeterministicLedger = shouldUseLangGraph(
+    input.message,
+    input.analyst_mode,
+  );
+  const deterministicAnswer = skipDeterministicLedger
+    ? null
+    : await tryDeterministicLedgerAnswer(input.message);
+  if (deterministicAnswer) {
+    return buildLedgerResponse(
+      parsed,
+      baseline,
+      deterministicAnswer,
+      "deterministic_ledger",
+    );
   }
 
-  // No document match — run normal financial scenario flow
+  // Hybrid step 2: LangGraph multi-agent for complex / forced specialist mode
+  if (shouldUseLangGraph(input.message, input.analyst_mode)) {
+    const langGraphResult = await orchestrateWithLangGraph({
+      message: input.message,
+      user_id: input.user_id,
+      financial_state: input.financial_state,
+      months: input.months,
+      forecast_start_month: input.forecast_start_month,
+      ai_provider: input.ai_provider,
+      analyst_mode: input.analyst_mode ?? "auto",
+    });
+    if (langGraphResult) {
+      const scenarioState = applyScenarioToState(
+        input.financial_state,
+        parsed.parameters,
+        parsed.intent,
+      );
+      const useScenario =
+        scenarioState !== null && parsed.intent !== "explanation_request";
+      const { timeline, risk } = useScenario
+        ? runEngines(scenarioState!, months, startMonth)
+        : baseline;
+
+      const detailAnswer = ensureAffordabilitySummary(
+        input.message,
+        input.financial_state,
+        baseline.risk,
+        langGraphResult.answer,
+      );
+
+      const writerSummary =
+        env.langgraph.writerEnabled() && input.use_llm !== false
+          ? await narrateSpecialistReport({
+              message: input.message,
+              detailAnswer,
+              ai_provider: input.ai_provider,
+            })
+          : null;
+
+      const explanation = writerSummary ?? detailAnswer;
+
+      return {
+        intent: langGraphResult.intent,
+        interpretation: writerSummary
+          ? writerSummary.includes("household ledger forecast")
+            ? "Specialist data from LangGraph; summary from computed metrics (LLM fallback when needed)."
+            : "Specialist data from LangGraph; summary narrated by LLM (numbers unchanged)."
+          : "Answer generated by LangGraph multi-agent orchestration over read-only snapshots.",
+        financial_summary: explanation,
+        risk_level: risk.risk_level,
+        explanation,
+        recommendation: langGraphResult.recommendation,
+        orchestrator_route: "langgraph",
+        agents_used: langGraphResult.agents_used,
+        writer_summary: writerSummary ?? undefined,
+        detail_answer: detailAnswer,
+        structured_data: {
+          timeline,
+          risk,
+          baseline_timeline: useScenario ? baseline.timeline : undefined,
+          baseline_risk: useScenario ? baseline.risk : undefined,
+        },
+      };
+    }
+  }
+
+  // Hybrid step 3: ledger + RAG LLM for non-complex questions only
+  if (!shouldUseLangGraph(input.message, input.analyst_mode)) {
+    const docAnswer = await tryDocumentAnswer(
+      input.message,
+      input.ai_provider,
+    );
+
+    if (docAnswer?.hasDocumentContext) {
+      return buildLedgerResponse(
+        parsed,
+        baseline,
+        docAnswer.answer,
+        "ledger_llm",
+      );
+    }
+  }
+
+  // Hybrid step 4: forecast scenario + advisor
   const scenarioState = applyScenarioToState(
     input.financial_state,
     parsed.parameters,
@@ -367,6 +446,7 @@ export async function handleScenarioMessage(
       advice.recommendations[0] ??
       advice.key_insights[0] ??
       "Review your forecast timeline for month-by-month details.",
+    orchestrator_route: "advisor",
     structured_data: {
       timeline,
       risk,

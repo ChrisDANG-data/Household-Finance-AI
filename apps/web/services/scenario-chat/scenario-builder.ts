@@ -39,18 +39,20 @@ function monthToStartDate(month: string): Date {
   return utcDate(`${month}-01`);
 }
 
-export function addOneTimeExpense(
+function addOneTimeCashflowEvent(
   state: FinancialState,
   options: {
     amount: number;
     target_month: string;
+    type: "one_time_expense" | "investment";
     category?: string;
     label?: string;
+    idPrefix: string;
   },
 ): FinancialState {
   const event: FinancialEvent = {
-    id: `scenario-expense-${randomUUID()}`,
-    type: "one_time_expense",
+    id: `${options.idPrefix}-${randomUUID()}`,
+    type: options.type,
     category: options.category ?? "scenario_expense",
     amount: options.amount,
     currency: "CAD",
@@ -73,6 +75,75 @@ export function addOneTimeExpense(
     },
     options.target_month,
   );
+}
+
+export function addOneTimeExpense(
+  state: FinancialState,
+  options: {
+    amount: number;
+    target_month: string;
+    category?: string;
+    label?: string;
+  },
+): FinancialState {
+  return addOneTimeCashflowEvent(state, {
+    ...options,
+    type: "one_time_expense",
+    idPrefix: "scenario-expense",
+  });
+}
+
+export function addRecurringExpense(
+  state: FinancialState,
+  options: {
+    amount: number;
+    target_month: string;
+    category?: string;
+    label?: string;
+  },
+): FinancialState {
+  const event: FinancialEvent = {
+    id: `scenario-recurring-${randomUUID()}`,
+    type: "recurring_expense",
+    category: options.category ?? "scenario_recurring_expense",
+    amount: options.amount,
+    currency: "CAD",
+    frequency: "monthly",
+    start_date: monthToStartDate(options.target_month),
+    end_date: null,
+    owner: "joint",
+    confidence: 1,
+    source_document_id: null,
+    metadata: {
+      merchant: options.label,
+      is_fixed: true,
+    },
+  };
+
+  return buildFinancialState(
+    {
+      ...state,
+      events: [...state.events.map(cloneEvent), event],
+    },
+    options.target_month,
+  );
+}
+
+export function addOneTimeInvestment(
+  state: FinancialState,
+  options: {
+    amount: number;
+    target_month: string;
+    category?: string;
+    label?: string;
+  },
+): FinancialState {
+  return addOneTimeCashflowEvent(state, {
+    ...options,
+    type: "investment",
+    category: options.category ?? "scenario_investment",
+    idPrefix: "scenario-investment",
+  });
 }
 
 export function adjustIncome(
@@ -111,6 +182,26 @@ export function applyScenarioToState(
     return null;
   }
 
+  if (params.modification === "add_recurring_expense" && params.amount) {
+    const month = params.target_month ?? addMonths(currentUtcMonth(), 1);
+    return addRecurringExpense(state, {
+      amount: params.amount,
+      target_month: month,
+      category: params.event_type ?? "affordability_recurring",
+      label: params.description,
+    });
+  }
+
+  if (params.modification === "add_one_time_investment" && params.amount) {
+    const month = params.target_month ?? addMonths(currentUtcMonth(), 1);
+    return addOneTimeInvestment(state, {
+      amount: params.amount,
+      target_month: month,
+      category: params.event_type ?? "scenario_investment",
+      label: params.description,
+    });
+  }
+
   if (params.modification === "add_one_time_expense" && params.amount) {
     const month = params.target_month ?? addMonths(currentUtcMonth(), 1);
     return addOneTimeExpense(state, {
@@ -134,6 +225,13 @@ export function applyScenarioToState(
   }
 
   if (intent === "what_if_simulation" && params.amount && params.target_month) {
+    if (params.modification === "add_one_time_investment") {
+      return addOneTimeInvestment(state, {
+        amount: params.amount,
+        target_month: params.target_month,
+        category: params.event_type ?? "what_if_investment",
+      });
+    }
     return addOneTimeExpense(state, {
       amount: params.amount,
       target_month: params.target_month,
@@ -143,6 +241,14 @@ export function applyScenarioToState(
 
   if (intent === "affordability_check" && params.amount) {
     const month = params.target_month ?? addMonths(currentUtcMonth(), 1);
+    if (params.modification === "add_recurring_expense") {
+      return addRecurringExpense(state, {
+        amount: params.amount,
+        target_month: month,
+        category: params.event_type ?? "affordability_recurring",
+        label: params.description,
+      });
+    }
     return addOneTimeExpense(state, {
       amount: params.amount,
       target_month: month,

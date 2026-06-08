@@ -2,11 +2,16 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, SendHorizonal, Sparkles } from "lucide-react";
+import {
+  BarChart3,
+  Loader2,
+  SendHorizonal,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
 
 import { useAiProvider } from "@/hooks/use-ai-provider";
 import { GoogleVoiceAskButton } from "@/components/ai/GoogleVoiceAskButton";
-import { AiProviderSwitch } from "@/components/ai/AiProviderSwitch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -496,11 +501,10 @@ export function ForecastSimulator() {
 
   return (
     <div className="space-y-6">
-      {/* Ask AI Section */}
       <ChatInput />
 
       {/* Forecast Section */}
-      <Card>
+      <Card id="fi-cash-flow" className="scroll-mt-32">
         <CardHeader>
           <CardTitle className="text-base">Cash-Flow Forecast (Next 6 Months)</CardTitle>
         </CardHeader>
@@ -803,174 +807,292 @@ export function ForecastSimulator() {
         </CardContent>
       </Card>
 
-      {/* Scenario Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">What-If Scenario</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="adj-type" className="text-xs text-muted-foreground">
-                Adjustment
-              </label>
-              <select
-                id="adj-type"
-                value={adjustment.type}
-                onChange={(e) =>
-                  setAdjustment((a) => ({ ...a, type: e.target.value as AdjustmentType }))
-                }
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="add_expense">Add expense</option>
-                <option value="change_income">Change income</option>
-              </select>
-            </div>
+      <WhatIfScenarioPanel
+        adjustment={adjustment}
+        onAdjustmentChange={setAdjustment}
+        loading={scenarioLoading}
+        error={scenarioError}
+        result={scenarioResult}
+        onSimulate={runScenario}
+      />
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="adj-amount" className="text-xs text-muted-foreground">
-                Amount (CAD)
-              </label>
-              <input
-                id="adj-amount"
-                type="number"
-                value={adjustment.amount}
-                onChange={(e) =>
-                  setAdjustment((a) => ({ ...a, amount: Number(e.target.value) }))
-                }
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              />
-            </div>
+    </div>
+  );
+}
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="adj-category" className="text-xs text-muted-foreground">
-                Category
-              </label>
-              <input
-                id="adj-category"
-                type="text"
-                value={adjustment.category}
-                onChange={(e) =>
-                  setAdjustment((a) => ({ ...a, category: e.target.value }))
-                }
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              />
-            </div>
+const FORECAST_SECTIONS = [
+  { id: "fi-cash-flow", label: "Cash-flow projection", Icon: BarChart3 },
+  { id: "fi-what-if", label: "What-if scenarios", Icon: SlidersHorizontal },
+  { id: "fi-ai-qa", label: "AI Q&A", Icon: Sparkles },
+] as const;
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="adj-frequency" className="text-xs text-muted-foreground">
-                Frequency
-              </label>
-              <select
-                id="adj-frequency"
-                value={adjustment.frequency}
-                onChange={(e) =>
-                  setAdjustment((a) => ({
-                    ...a,
-                    frequency: e.target.value as AdjustmentForm["frequency"],
-                  }))
-                }
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="monthly">Monthly</option>
-                <option value="weekly">Weekly</option>
-                <option value="yearly">Yearly</option>
-                <option value="one_time">One-time</option>
-              </select>
-            </div>
+export function ForecastSectionNav() {
+  return (
+    <nav
+      className="flex flex-wrap items-center gap-2"
+      aria-label="Jump to forecast sections"
+    >
+      {FORECAST_SECTIONS.map(({ id, label, Icon }) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() =>
+            document.getElementById(id)?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            })
+          }
+          className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/60 px-4 py-2 text-sm text-muted-foreground shadow-sm transition hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-foreground hover:shadow"
+        >
+          <Icon className="size-3.5 shrink-0" />
+          {label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+const WHAT_IF_PRESETS: Array<{ label: string; adjustment: AdjustmentForm }> = [
+  {
+    label: "$500/mo car payment",
+    adjustment: {
+      type: "add_expense",
+      amount: 500,
+      category: "car_payment",
+      frequency: "monthly",
+    },
+  },
+  {
+    label: "+$200/mo income",
+    adjustment: {
+      type: "change_income",
+      amount: 200,
+      category: "side_income",
+      frequency: "monthly",
+    },
+  },
+  {
+    label: "$3k one-time expense",
+    adjustment: {
+      type: "add_expense",
+      amount: 3000,
+      category: "one_time_expense",
+      frequency: "one_time",
+    },
+  },
+];
+
+interface WhatIfScenarioPanelProps {
+  adjustment: AdjustmentForm;
+  onAdjustmentChange: React.Dispatch<React.SetStateAction<AdjustmentForm>>;
+  loading: boolean;
+  error: string | null;
+  result: ScenarioResult | null;
+  onSimulate: () => void;
+}
+
+function WhatIfScenarioPanel({
+  adjustment,
+  onAdjustmentChange,
+  loading,
+  error,
+  result,
+  onSimulate,
+}: WhatIfScenarioPanelProps) {
+  return (
+    <div
+      id="fi-what-if"
+      className="glass-card glow-border scroll-mt-32 overflow-hidden rounded-2xl border-emerald-500/25"
+    >
+      <div className="flex items-center gap-2.5 border-b border-border/60 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent px-5 py-3">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25">
+          <SlidersHorizontal className="size-3.5" />
+        </span>
+        <h2 className="font-semibold tracking-tight">What-If Scenario</h2>
+      </div>
+      <div className="p-5 space-y-4">
+        <div className="flex flex-wrap items-end gap-2.5">
+          <div className="flex min-w-[8.5rem] flex-1 flex-col gap-1">
+            <label htmlFor="adj-type" className="text-xs text-muted-foreground">
+              Adjustment
+            </label>
+            <select
+              id="adj-type"
+              value={adjustment.type}
+              onChange={(e) =>
+                onAdjustmentChange((a) => ({
+                  ...a,
+                  type: e.target.value as AdjustmentType,
+                }))
+              }
+              className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm"
+            >
+              <option value="add_expense">Add expense</option>
+              <option value="change_income">Change income</option>
+            </select>
           </div>
 
-          <Button onClick={runScenario} disabled={scenarioLoading}>
-            {scenarioLoading ? "Simulating…" : "Simulate"}
+          <div className="flex min-w-[6rem] flex-1 flex-col gap-1">
+            <label htmlFor="adj-amount" className="text-xs text-muted-foreground">
+              Amount (CAD)
+            </label>
+            <input
+              id="adj-amount"
+              type="number"
+              value={adjustment.amount}
+              onChange={(e) =>
+                onAdjustmentChange((a) => ({
+                  ...a,
+                  amount: Number(e.target.value),
+                }))
+              }
+              className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm"
+            />
+          </div>
+
+          <div className="flex min-w-[7rem] flex-1 flex-col gap-1">
+            <label htmlFor="adj-category" className="text-xs text-muted-foreground">
+              Category
+            </label>
+            <input
+              id="adj-category"
+              type="text"
+              value={adjustment.category}
+              onChange={(e) =>
+                onAdjustmentChange((a) => ({ ...a, category: e.target.value }))
+              }
+              className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm"
+            />
+          </div>
+
+          <div className="flex min-w-[7rem] flex-1 flex-col gap-1">
+            <label htmlFor="adj-frequency" className="text-xs text-muted-foreground">
+              Frequency
+            </label>
+            <select
+              id="adj-frequency"
+              value={adjustment.frequency}
+              onChange={(e) =>
+                onAdjustmentChange((a) => ({
+                  ...a,
+                  frequency: e.target.value as AdjustmentForm["frequency"],
+                }))
+              }
+              className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm"
+            >
+              <option value="monthly">Monthly</option>
+              <option value="weekly">Weekly</option>
+              <option value="yearly">Yearly</option>
+              <option value="one_time">One-time</option>
+            </select>
+          </div>
+
+          <Button
+            onClick={onSimulate}
+            disabled={loading}
+            className="h-10 shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 shadow-md shadow-emerald-500/20"
+          >
+            {loading ? "Simulating…" : "Simulate"}
           </Button>
+        </div>
 
-          {scenarioError && (
-            <p className="text-sm text-destructive">{scenarioError}</p>
-          )}
+        <div className="flex flex-wrap gap-2">
+          {WHAT_IF_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              disabled={loading}
+              onClick={() => onAdjustmentChange(preset.adjustment)}
+              className="rounded-full border border-border/80 bg-background/60 px-3.5 py-1.5 text-xs text-muted-foreground shadow-sm transition hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-foreground hover:shadow disabled:opacity-50"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
 
-          {scenarioResult && (
-            <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-medium">Baseline</h4>
-                    <Badge className={RISK_COLORS[scenarioResult.baseline.risk.risk_level]}>
-                      {scenarioResult.baseline.risk.risk_level}
-                    </Badge>
-                  </div>
-                  <ClusteredColumnChart timeline={scenarioResult.baseline.timeline} />
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+        {result ? (
+          <div className="space-y-4 border-t border-border/60 pt-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-medium">Baseline</h4>
+                  <Badge className={RISK_COLORS[result.baseline.risk.risk_level]}>
+                    {result.baseline.risk.risk_level}
+                  </Badge>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-medium">Scenario</h4>
-                    <Badge className={RISK_COLORS[scenarioResult.scenario.risk.risk_level]}>
-                      {scenarioResult.scenario.risk.risk_level}
-                    </Badge>
-                  </div>
-                  <ClusteredColumnChart timeline={scenarioResult.scenario.timeline} />
-                </div>
+                <ClusteredColumnChart timeline={result.baseline.timeline} />
               </div>
-
-              <div className="rounded-md border border-border p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Net Difference (Scenario vs Baseline)</span>
-                  <span
-                    className={`font-mono text-sm font-semibold ${
-                      scenarioResult.comparison.net_difference >= 0
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {scenarioResult.comparison.net_difference >= 0 ? "+" : ""}
-                    {formatCad(scenarioResult.comparison.net_difference)}
-                  </span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-medium">Scenario</h4>
+                  <Badge className={RISK_COLORS[result.scenario.risk.risk_level]}>
+                    {result.scenario.risk.risk_level}
+                  </Badge>
                 </div>
-              </div>
-
-              <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="px-3 py-2 text-left font-medium">Month</th>
-                      <th className="px-3 py-2 text-right font-medium">Baseline Net</th>
-                      <th className="px-3 py-2 text-right font-medium">Scenario Net</th>
-                      <th className="px-3 py-2 text-right font-medium">Diff</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {scenarioResult.baseline.timeline.map((bMonth, i) => {
-                      const sMonth = scenarioResult.scenario.timeline[i];
-                      const diff = (sMonth?.net_cash_flow ?? 0) - bMonth.net_cash_flow;
-                      return (
-                        <tr key={bMonth.month} className="border-b border-border last:border-0">
-                          <td className="px-3 py-1.5 font-mono text-xs">{bMonth.month}</td>
-                          <td className="px-3 py-1.5 text-right font-mono text-xs">
-                            {formatCad(bMonth.net_cash_flow)}
-                          </td>
-                          <td className="px-3 py-1.5 text-right font-mono text-xs">
-                            {formatCad(sMonth?.net_cash_flow ?? 0)}
-                          </td>
-                          <td
-                            className={`px-3 py-1.5 text-right font-mono text-xs ${
-                              diff >= 0
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : "text-red-600 dark:text-red-400"
-                            }`}
-                          >
-                            {diff >= 0 ? "+" : ""}
-                            {formatCad(diff)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <ClusteredColumnChart timeline={result.scenario.timeline} />
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
+            <div className="rounded-md border border-border p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Net Difference (Scenario vs Baseline)</span>
+                <span
+                  className={`font-mono text-sm font-semibold ${
+                    result.comparison.net_difference >= 0
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {result.comparison.net_difference >= 0 ? "+" : ""}
+                  {formatCad(result.comparison.net_difference)}
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-md border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-3 py-2 text-left font-medium">Month</th>
+                    <th className="px-3 py-2 text-right font-medium">Baseline Net</th>
+                    <th className="px-3 py-2 text-right font-medium">Scenario Net</th>
+                    <th className="px-3 py-2 text-right font-medium">Diff</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.baseline.timeline.map((bMonth, i) => {
+                    const sMonth = result.scenario.timeline[i];
+                    const diff = (sMonth?.net_cash_flow ?? 0) - bMonth.net_cash_flow;
+                    return (
+                      <tr key={bMonth.month} className="border-b border-border last:border-0">
+                        <td className="px-3 py-1.5 font-mono text-xs">{bMonth.month}</td>
+                        <td className="px-3 py-1.5 text-right font-mono text-xs">
+                          {formatCad(bMonth.net_cash_flow)}
+                        </td>
+                        <td className="px-3 py-1.5 text-right font-mono text-xs">
+                          {formatCad(sMonth?.net_cash_flow ?? 0)}
+                        </td>
+                        <td
+                          className={`px-3 py-1.5 text-right font-mono text-xs ${
+                            diff >= 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {diff >= 0 ? "+" : ""}
+                          {formatCad(diff)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -1026,12 +1148,12 @@ function ChatInput() {
           question: trimmed,
           data: json.data,
         }));
-        router.push("/simulation/chat-result");
+        router.push(`/simulation/chat-result?t=${Date.now()}`);
         return;
       }
       setError(
         json.error?.message ??
-          `Request failed (${res.status}). Try Claude or check your API keys.`,
+          `Request failed (${res.status}). Check your API keys and try again.`,
       );
     } catch (err) {
       setError(
@@ -1043,34 +1165,26 @@ function ChatInput() {
   }
 
   const suggestions = [
-    "Total expenses in June 2026?",
-    "What is my house insurance payment?",
-    "Can I afford a $3000 vacation?",
+    "What's my balance trend?",
+    "Can I afford a $500/month car payment?",
+    "Average increase % over next 3 months?",
   ];
 
   return (
-    <div className="glass-card glow-border overflow-hidden rounded-2xl border-emerald-500/25">
-      <div className="border-b border-border/60 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent px-6 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25">
-              <Sparkles className="size-4" />
-            </span>
-            <div>
-              <h2 className="font-semibold tracking-tight">Ask AI about your finances</h2>
-              <p className="text-xs text-muted-foreground">
-                Voice: browser speech; Claude→free local STT / Gemini→record — Send
-              </p>
-            </div>
-          </div>
-          <AiProviderSwitch />
-        </div>
+    <div
+      id="fi-ai-qa"
+      className="glass-card glow-border scroll-mt-32 overflow-hidden rounded-2xl border-emerald-500/25"
+    >
+      <div className="flex items-center gap-2.5 border-b border-border/60 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent px-5 py-3">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25">
+          <Sparkles className="size-3.5" />
+        </span>
+        <h2 className="font-semibold tracking-tight">Ask AI about your finances</h2>
       </div>
-      <div className="p-6">
-        <form onSubmit={handleAsk} className="flex gap-3">
+      <div className="p-5">
+        <form onSubmit={handleAsk} className="flex items-center gap-2.5">
           <GoogleVoiceAskButton
             disabled={sending}
-            showModeLabel
             onTranscript={(text) => {
               setQuestion(text);
               setVoiceError(null);
@@ -1081,8 +1195,8 @@ function ChatInput() {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="e.g. Total expenses in June 2026? Can I afford a $3000 vacation?"
-            className="min-h-[52px] flex-1 resize-none border-border/80 bg-background/50"
-            rows={2}
+            className="min-h-[44px] flex-1 resize-none border-border/80 bg-background/50 py-2.5"
+            rows={1}
             disabled={sending}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -1094,7 +1208,7 @@ function ChatInput() {
           <Button
             type="submit"
             size="icon"
-            className="size-11 shrink-0 self-end bg-gradient-to-r from-emerald-600 to-teal-600 shadow-md shadow-emerald-500/20"
+            className="size-10 shrink-0 bg-gradient-to-r from-emerald-600 to-teal-600 shadow-md shadow-emerald-500/20"
             disabled={sending || !question.trim()}
           >
             {sending ? (
@@ -1121,7 +1235,7 @@ function ChatInput() {
               type="button"
               disabled={sending}
               onClick={() => setQuestion(s)}
-              className="rounded-full border border-border/80 bg-muted/50 px-3 py-1 text-xs text-muted-foreground transition hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-foreground disabled:opacity-50"
+              className="rounded-full border border-border/80 bg-background/60 px-3.5 py-1.5 text-xs text-muted-foreground shadow-sm transition hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-foreground hover:shadow disabled:opacity-50"
             >
               {s}
             </button>

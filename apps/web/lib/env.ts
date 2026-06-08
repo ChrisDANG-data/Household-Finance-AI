@@ -88,6 +88,9 @@ export const env = {
   langgraph: {
     orchestratorUrl: () => optionalEnv("LANGGRAPH_URL"),
     enabled: () => optionalEnv("LANGGRAPH_ENABLED", "false") === "true",
+    /** LLM narration layer after deterministic LangGraph specialists. */
+    writerEnabled: () =>
+      optionalEnv("LANGGRAPH_WRITER_ENABLED", "false") === "true",
   },
 } as const;
 

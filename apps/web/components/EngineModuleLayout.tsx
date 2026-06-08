@@ -1,7 +1,3 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface EngineModuleLayoutProps {
@@ -9,6 +5,7 @@ interface EngineModuleLayoutProps {
   subtitle: string;
   children: React.ReactNode;
   wide?: boolean;
+  toolbar?: React.ReactNode;
 }
 
 export function EngineModuleLayout({
@@ -16,32 +13,29 @@ export function EngineModuleLayout({
   subtitle,
   children,
   wide = false,
+  toolbar,
 }: EngineModuleLayoutProps) {
   return (
     <div
       className={cn(
-        "mx-auto px-4 py-10 sm:px-6 sm:py-12",
-        wide ? "max-w-6xl" : "max-w-3xl",
+        "relative mx-auto px-4 pb-16 pt-28 sm:px-8 sm:pt-32",
+        wide ? "max-w-6xl" : "max-w-5xl",
       )}
     >
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-2 mb-4 text-muted-foreground"
-          render={<Link href="/" />}
-          nativeButton={false}
-        >
-          <ArrowLeft className="size-4" />
-          Home
-        </Button>
-        <p className="text-xs font-medium uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-          Engine module
+      <div className="pointer-events-none absolute right-[10%] top-24 size-56 rounded-full bg-emerald-400/20 blur-[80px]" />
+
+      <div className="relative mb-10">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
+        <p className="mt-3 text-base text-foreground/65 sm:text-lg sm:whitespace-nowrap">
+          {subtitle}
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">{subtitle}</p>
       </div>
-      {children}
+
+      {toolbar ? <div className="relative mb-6">{toolbar}</div> : null}
+
+      <div className="glass-card relative overflow-hidden rounded-3xl border-emerald-500/15 p-6 shadow-xl sm:p-8">
+        {children}
+      </div>
     </div>
   );
 }

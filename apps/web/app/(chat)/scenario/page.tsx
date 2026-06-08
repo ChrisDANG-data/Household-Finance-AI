@@ -299,7 +299,6 @@ export default function ScenarioChatPage() {
           >
             <GoogleVoiceAskButton
               disabled={isLoading}
-              showModeLabel
               onTranscript={(text) => {
                 setInput(text);
                 setVoiceError(null);

@@ -1,0 +1,4 @@
+message,expected_output,actual_output,pass_fail,notes
+hello world,Echo: hello world,,,Manual batch test row 1
+foo bar,Echo: foo bar,,,Row 2
+test 123,Echo: test 123,,,Row 3

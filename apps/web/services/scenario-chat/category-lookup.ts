@@ -146,6 +146,14 @@ function categoryLabelFromMessage(message: string): string {
 export async function tryCategoryPaymentAnswer(
   message: string,
 ): Promise<string | null> {
+  if (
+    /\b(can i afford|could i afford|afford another|do i have enough|what if)\b/i.test(
+      message,
+    )
+  ) {
+    return null;
+  }
+
   if (!PAYMENT_QUERY.test(message)) return null;
 
   const targetMonth = extractTargetMonth(message);

@@ -1,0 +1,11 @@
+message,expected_output,should_save,tool_reference,actual_output,similarity_score,pass_fail,notes
+"add expense grocery 85",Saved: expense grocery,true,add_ledger_event,,,,"Stable prefix; date may vary"
+"record income salary 5200 monthly",Saved: income salary,true,add_ledger_event,,,,"e.g. Saved: income salary $5200 (monthly, from …)"
+"log investment rrsp 300",Saved: investment rrsp,true,add_ledger_event,,,,
+"add expense car insurance 162 in June 2026",Saved: expense car insurance,true,add_ledger_event,,,,"Month hint → one_time"
+"what is my credit card balance from the bank",balance,false,get_plaid_account_balances,,,,"Plaid read — reply mentions balance"
+"how much is on my checking account",checking,false,get_plaid_account_balances,,,,
+"total expenses in May 2026",May,false,ask_financial_question,,,,"Q&A — month or totals in reply"
+"what are my house insurance payments this year",insurance,false,ask_financial_question,,,,
+"sync my bank balances",sync,false,sync_plaid_balances,,,,
+"add expense rent 2000",Saved: expense rent,true,add_ledger_event,,,,

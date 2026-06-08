@@ -143,4 +143,123 @@
       0 0 0 1px oklch(0.52 0.14 165 / 0.15),
       0 4px 24px oklch(0.52 0.14 165 / 0.08);
   }
+
+  .fi-mesh-bg {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(
+        ellipse 80% 50% at 50% -20%,
+        oklch(0.72 0.12 165 / 0.12),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 60% 40% at 100% 0%,
+        oklch(0.65 0.1 200 / 0.08),
+        transparent
+      );
+  }
+
+  .fi-orb {
+    animation: fi-orb-pulse 7s ease-in-out infinite;
+  }
+
+  .fi-orb-delayed {
+    animation: fi-orb-pulse 9s ease-in-out infinite 1.5s;
+  }
+
+  .fi-featured-ring {
+    box-shadow:
+      0 0 0 1px oklch(0.52 0.14 165 / 0.35),
+      0 8px 32px oklch(0.52 0.14 165 / 0.12);
+  }
+
+  @keyframes fi-orb-pulse {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.85;
+      transform: scale(1.08);
+    }
+  }
+
+  .fi-app-bg {
+    background-color: #f0fdf8;
+  }
+
+  .dark .fi-app-bg {
+    background-color: #071a10;
+  }
+
+  .fi-home-page {
+    background-color: #f0fdf8;
+  }
+
+  .dark .fi-home-page {
+    background-color: #071a10;
+  }
+
+  .fi-cloudme-hero {
+    background: linear-gradient(
+      145deg,
+      #0b7a55 0%,
+      #12a06b 28%,
+      #1abc9c 55%,
+      #22c55e 100%
+    );
+  }
+
+  .dark .fi-cloudme-hero {
+    background: linear-gradient(
+      145deg,
+      #064e3b 0%,
+      #0a6b4a 35%,
+      #0d9668 70%,
+      #10b981 100%
+    );
+  }
+
+  .fi-nav-pill {
+    border: 1px solid oklch(0.92 0.02 155 / 0.7);
+    background: oklch(1 0 0 / 0.9);
+    box-shadow:
+      0 1px 2px oklch(0 0 0 / 0.05),
+      0 8px 32px oklch(0.45 0.1 155 / 0.12);
+    backdrop-filter: blur(16px);
+    border-radius: 9999px;
+  }
+
+  .fi-nav-pill-hero {
+    border: 1px solid oklch(1 0 0 / 0.22);
+    background: oklch(1 0 0 / 0.12);
+    box-shadow: 0 8px 32px oklch(0 0 0 / 0.15);
+    backdrop-filter: blur(14px);
+    border-radius: 9999px;
+  }
+
+  .fi-nav-pill-hero .fi-nav-brand {
+    color: white;
+  }
+
+  .fi-nav-pill-hero .fi-nav-link {
+    color: oklch(1 0 0 / 0.82);
+  }
+
+  .fi-nav-pill-hero .fi-nav-link:hover {
+    background: oklch(1 0 0 / 0.12);
+    color: white;
+  }
+
+  .fi-nav-pill-hero .fi-nav-link-active {
+    background: oklch(1 0 0 / 0.2);
+    color: white;
+  }
+
+  .dark .fi-nav-pill {
+    border-color: oklch(0.35 0.04 155 / 0.5);
+    background: oklch(0.18 0.04 155 / 0.92);
+    box-shadow: 0 8px 32px oklch(0 0 0 / 0.35);
+  }
 }

@@ -187,4 +187,11 @@ Or run directly from `services/langgraph-orchestrator/`.
 
 ### Integration
 
-`apps/web/services/scenario-chat/orchestrator.ts` calls LangGraph first (when enabled). If unavailable, it falls back to existing in-app orchestrator.
+`apps/web/services/scenario-chat/orchestrator.ts` uses **hybrid routing**:
+
+1. Deterministic ledger (month totals, category, partner) — TypeScript, no LLM
+2. LangGraph multi-agent — complex / afford / what-if / forced `analyst_mode`
+3. Ledger + RAG LLM — ambiguous document questions
+4. Forecast advisor — default scenario flow
+
+If LangGraph is unavailable, steps 2 falls through to 3–4.
