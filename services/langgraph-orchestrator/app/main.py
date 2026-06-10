@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict
 
 from fastapi import FastAPI
@@ -33,7 +34,10 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {
+        "ok": True,
+        "app_web_base_url": os.environ.get("APP_WEB_BASE_URL", ""),
+    }
 
 
 @app.post("/orchestrate")

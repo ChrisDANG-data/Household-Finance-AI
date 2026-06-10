@@ -11,10 +11,14 @@
             "id": "5396d30522773b89",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "01_Architecture/INTEGRATIONS.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "INTEGRATIONS"
             }
           }
         ]
@@ -178,6 +182,14 @@
   },
   "active": "5396d30522773b89",
   "lastOpenFiles": [
+    "03_Build_Log/2026-06-10_Session.md",
+    "02_Decisions/2026-06-10_Obsidian_Engineering_Wiki.md",
+    "09_Code_From_Chat/2026-06-10_obsidian-dual-wiki-setup.md",
+    "02_Decisions/2026-05-31_Obsidian_Engineering_Wiki.md",
+    "01_Architecture/INTEGRATIONS.md",
+    "01_Architecture/DEPENDENCIES.md",
+    "01_Architecture/ARCHITECTURE.md",
+    "00_Dashboard/Project Dashboard.md",
     "Household Index.md",
     "README.md",
     "Categories/car.md",

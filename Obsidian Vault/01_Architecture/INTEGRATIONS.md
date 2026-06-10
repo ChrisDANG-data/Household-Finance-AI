@@ -172,17 +172,6 @@ Optional query `q` filters by account name/subtype (e.g. `credit`, `checking`, `
 
 ## LangGraph
 
-### Production (Railway)
-
-Deploy `services/langgraph-orchestrator` to [Railway](https://railway.app). Full steps: [services/langgraph-orchestrator/RAILWAY.md](../services/langgraph-orchestrator/RAILWAY.md).
-
-| Where | Variables |
-|-------|-----------|
-| **Railway** | `APP_WEB_BASE_URL=https://household-financial-web.vercel.app` |
-| **Vercel** | `LANGGRAPH_ENABLED=true`, `LANGGRAPH_URL=https://<railway-domain>` |
-
-Vercel does **not** run the Python LangGraph service — only the Next.js app.
-
 ### Local startup
 
 ```bash
@@ -191,7 +180,7 @@ docker compose up -d langgraph
 
 Or run directly from `services/langgraph-orchestrator/`.
 
-### Required env (apps/web `.env` local)
+### Required env (apps/web/.env)
 
 - `LANGGRAPH_ENABLED=true`
 - `LANGGRAPH_URL=http://localhost:8081`

@@ -34,13 +34,24 @@ Or via Docker Compose (uses `host.docker.internal:3000`):
 docker compose up -d langgraph
 ```
 
+## Deploy to Railway (production)
+
+See **[RAILWAY.md](./RAILWAY.md)** for step-by-step setup.
+
+Summary:
+
+1. Railway service root: `services/langgraph-orchestrator`
+2. Set `APP_WEB_BASE_URL=https://household-financial-web.vercel.app`
+3. Set Vercel env: `LANGGRAPH_URL=https://<railway-domain>`, `LANGGRAPH_ENABLED=true`
+
 ## Environment
 
-| Variable | Description |
-|----------|-------------|
-| `APP_WEB_BASE_URL` | Next.js base URL for read-only API calls |
-| (apps/web) `LANGGRAPH_ENABLED=true` | Enable hybrid LangGraph path |
-| (apps/web) `LANGGRAPH_URL=http://localhost:8081` | Orchestrator URL |
+| Variable | Where | Description |
+|----------|-------|-------------|
+| `APP_WEB_BASE_URL` | Railway / local | Next.js base URL for read-only API calls |
+| `PORT` | Railway (auto) | Listen port — set by Railway |
+| `LANGGRAPH_ENABLED=true` | apps/web | Enable hybrid LangGraph path |
+| `LANGGRAPH_URL` | apps/web | Orchestrator URL (`http://localhost:8081` or Railway HTTPS URL) |
 
 ## Endpoint
 

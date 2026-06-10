@@ -87,7 +87,10 @@ export function ObsidianWikiPanel() {
           Local sync requires{" "}
           <code className="rounded bg-muted px-1 py-0.5">OBSIDIAN_VAULT_PATH</code>{" "}
           in <code className="rounded bg-muted px-1 py-0.5">apps/web/.env</code>.
-          ZIP export works on Vercel without a server path.
+          ZIP export works on Vercel without a server path. Engineering notes
+          (decisions, logs, chat code): run{" "}
+          <code className="rounded bg-muted px-1 py-0.5">npm run sync:obsidian</code>{" "}
+          from the repo root.
         </p>
         {message ? (
           <p className="text-sm text-primary" role="status">

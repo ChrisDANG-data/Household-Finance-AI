@@ -46,7 +46,7 @@ export async function orchestrateWithLangGraph(
         financial_state: input.financial_state,
       }),
       cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!response.ok) return null;
 
