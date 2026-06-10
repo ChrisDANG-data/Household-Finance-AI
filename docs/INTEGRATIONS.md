@@ -83,6 +83,30 @@ Use **`POST /api/automation/ledger-event`** (simpler than `/api/financial-state/
 
 Bearer `Authorization` header when `AUTOMATION_WEBHOOK_TOKEN` is set.
 
+### Telegram — financial Q&A (income, expenses, forecast)
+
+Use **`POST /api/automation/financial-question`** — not `/api/scenario-chat`.
+
+| Field | Required |
+|-------|----------|
+| `message` | User question (e.g. `what is the income in July`) |
+| `user_id` | optional — default `default` |
+
+**Response:** `{ reply, route }` inside `data`. Telegram must send **`data.reply` verbatim** to the user.
+
+Why not `/api/scenario-chat`? The web route returns a full **timeline** (6+ months of JSON). The n8n agent often **recomputes** totals from that (e.g. `$52,000 = 5200×9 + …`) instead of using the deterministic answer. The automation route returns **text only**.
+
+**n8n tool `ask_financial_question`:** POST `.../api/automation/financial-question`
+
+**Agent system prompt (add):**
+
+```text
+For ledger lookups (income, expenses, totals by month, insurance, afford):
+- Always call ask_financial_question.
+- Reply with ONLY the tool's data.reply field — copy exactly, no math.
+- Never sum or multiply amounts yourself.
+```
+
 ### Monthly summary email (Gmail)
 
 **New n8n workflow** (separate from Telegram): `monthly-financial-summary-email.json`

@@ -120,7 +120,7 @@ export function shouldUseLangGraph(
   return isComplexMultiAgentQuery(message);
 }
 
-/** UI hybrid toggle: false skips LangGraph; true/undefined uses hybrid classifier. */
+/** false = skip LangGraph; true/undefined = hybrid routing when service is enabled */
 export function resolveUseLangGraph(
   message: string,
   analystMode?: AnalystMode,

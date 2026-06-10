@@ -50,8 +50,8 @@ If your Google Sheet still uses column name **`should_contain`**, either rename 
 | Tool name in n8n | Method | URL |
 |------------------|--------|-----|
 | `add_ledger_event` | POST | `{APP_API_BASE_URL}/api/automation/ledger-event` |
+| `ask_financial_question` | POST | `{APP_API_BASE_URL}/api/automation/financial-question` |
 | `get_plaid_account_balances` | GET | `{APP_API_BASE_URL}/api/integrations/plaid/accounts?user_id=default&q=...` |
-| `ask_financial_question` | POST | `{APP_API_BASE_URL}/api/scenario-chat` |
 | `sync_plaid_balances` | POST | `{APP_API_BASE_URL}/api/integrations/plaid/sync` |
 
 All automation routes: header `Authorization: Bearer {AUTOMATION_WEBHOOK_TOKEN}` (same as Vercel).
@@ -60,15 +60,27 @@ All automation routes: header `Authorization: Bearer {AUTOMATION_WEBHOOK_TOKEN}`
 
 ```json
 {
-  "message": "<user question>",
-  "user_id": "default",
-  "current_cash": 0,
-  "events": [],
-  "use_llm": true
+  "message": "<user question>"
 }
 ```
 
-(Empty `events` loads persisted state from Neon when available.)
+Optional: `user_id` (default `default`), `months`, `forecast_start_month`, `use_llm`.
+
+Response (use **`data.reply` verbatim** — do not recalculate from other fields):
+
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Total income in July 2026: $7,600.00\n\n• salary ...",
+    "route": "deterministic_ledger"
+  }
+}
+```
+
+**Telegram agent rule:** After calling `ask_financial_question`, send **`data.reply` exactly** to the user. Never multiply amounts or sum timeline months yourself.
+
+Legacy `/api/scenario-chat` still works for the web UI but returns full timeline JSON — avoid for Telegram tools.
 
 ## Visual dashboard (like the YouTube eval tutorials)
 
