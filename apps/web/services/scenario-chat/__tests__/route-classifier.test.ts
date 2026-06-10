@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isComplexMultiAgentQuery,
   isForcedAnalystMode,
+  resolveUseLangGraph,
   shouldUseLangGraph,
 } from "../route-classifier";
 
@@ -46,9 +47,24 @@ describe("route-classifier", () => {
     );
   });
 
+  it("routes average MoM % forecast questions to LangGraph", () => {
+    expect(
+      shouldUseLangGraph("Average increase % over next 3 months?"),
+    ).toBe(true);
+  });
+
   it("forces LangGraph when analyst_mode is a specialist", () => {
     expect(isForcedAnalystMode("cost")).toBe(true);
     expect(shouldUseLangGraph("hello", "investment")).toBe(true);
     expect(shouldUseLangGraph("hello", "auto")).toBe(false);
+  });
+
+  it("resolveUseLangGraph skips LangGraph when langgraph_enabled is false", () => {
+    expect(
+      resolveUseLangGraph("Can I afford a $500/month car payment?", "auto", false),
+    ).toBe(false);
+    expect(
+      resolveUseLangGraph("What's my balance trend?", "auto", false),
+    ).toBe(false);
   });
 });

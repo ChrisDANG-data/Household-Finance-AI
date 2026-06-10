@@ -131,12 +131,68 @@ function formatEventLine(event: FinancialEvent): string {
 
 function categoryLabelFromMessage(message: string): string {
   const normalized = message.toLowerCase();
+  for (const phrase of KNOWN_CATEGORY_PHRASES) {
+    if (normalized.includes(phrase)) return phrase;
+  }
   if (normalized.includes("house insurance")) return "house insurance";
   const match = normalized.match(
     /\b(?:my|the)\s+([a-z][\w\s]{0,30}?)(?:\s+payment|\s+in\s)/i,
   );
   if (match?.[1]) return match[1].trim();
   return "matching";
+}
+
+function isCoveragePeriodQuestion(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    /\bwhat(?:'s| is) the last month\b/.test(lower) ||
+    /\b(last|final|end)\s+month\b/.test(lower) ||
+    /\btermination date\b/.test(lower) ||
+    /\bwhen does\b.*\b(end|expire|finish)\b/.test(lower)
+  );
+}
+
+function monthKeyFromDate(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/**
+ * Answer "last month of car insurance" style questions from event end dates (no LLM).
+ */
+export async function tryCategoryCoverageAnswer(
+  message: string,
+): Promise<string | null> {
+  if (!isCoveragePeriodQuestion(message)) return null;
+
+  const state = await financialStatePersistence.loadState(DEFAULT_USER_ID);
+  let matches = state.events.filter((e) => eventMatchesQuery(e, message));
+  matches = dedupeEvents(matches);
+
+  if (matches.length === 0) return null;
+
+  const withEnd = matches.filter((e) => e.end_date);
+
+  if (withEnd.length === 0) {
+    const latestStart = matches.reduce((current, candidate) =>
+      candidate.start_date > current.start_date ? candidate : current,
+    );
+    const category = latestStart.category.replace(/_/g, " ");
+    return (
+      `The last month of ${category} coverage is ${monthLabel(monthKeyFromDate(latestStart.start_date))} ` +
+      `(last recorded payment ${formatDate(latestStart.start_date)}).`
+    );
+  }
+
+  const latest = withEnd.reduce((current, candidate) =>
+    candidate.end_date! > current.end_date! ? candidate : current,
+  );
+  const endDate = latest.end_date!;
+  const category = latest.category.replace(/_/g, " ");
+
+  return (
+    `The last month of ${category} coverage is ${monthLabel(monthKeyFromDate(endDate))} ` +
+    `(contract ends ${formatDate(endDate)}).`
+  );
 }
 
 /**

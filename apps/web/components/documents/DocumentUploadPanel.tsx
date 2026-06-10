@@ -64,6 +64,13 @@ export function DocumentUploadPanel() {
       if (result.chunksIndexed > 0) {
         parts.push(`Indexed ${result.chunksIndexed} search chunk(s)`);
       }
+      if (result.wikiPagesWritten > 0) {
+        parts.push(
+          result.obsidianVaultSynced
+            ? `Updated Obsidian wiki (${result.wikiPagesWritten} notes)`
+            : `Compiled Obsidian wiki (${result.wikiPagesWritten} notes)`,
+        );
+      }
       if (result.detectedObligations.length > 0) {
         parts.push(
           `Found ${result.detectedObligations.length} payment(s) — confirm in the dialog to add to your ledger`,

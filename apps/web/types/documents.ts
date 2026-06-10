@@ -79,7 +79,19 @@ export interface ExtractionConfirmResult {
 export interface DocumentUploadResponse {
   document: SerializedDocument;
   chunksIndexed: number;
+  wikiPagesWritten: number;
+  obsidianVaultSynced: boolean;
   obligationsSaved: number;
   detectedObligations: ReviewableObligation[];
   warnings: string[];
+}
+
+export interface ObsidianWikiSyncResult {
+  pageCount: number;
+  documentCount: number;
+  categoryCount: number;
+  eventCount: number;
+  vaultSynced: boolean;
+  vaultPath: string | null;
+  message: string;
 }

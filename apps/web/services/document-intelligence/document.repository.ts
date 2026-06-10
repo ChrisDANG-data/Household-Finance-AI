@@ -21,6 +21,8 @@ export interface UploadDocumentInput {
 
 export interface DocumentProcessSummary {
   chunksIndexed: number;
+  wikiPagesWritten: number;
+  obsidianVaultSynced: boolean;
   obligationsSaved: number;
   detectedObligations: ReviewableObligation[];
   warnings: string[];
@@ -108,6 +110,8 @@ export class DocumentRepository {
 
     const processing: DocumentProcessSummary = {
       chunksIndexed: 0,
+      wikiPagesWritten: 0,
+      obsidianVaultSynced: false,
       obligationsSaved: 0,
       detectedObligations: [],
       warnings: [],
@@ -132,7 +136,13 @@ export class DocumentRepository {
         return { document: serializeDocument(updated), processing };
       }
 
-      processing.chunksIndexed = await this.indexForSearch(documentId, processing);
+      const [chunksIndexed, wikiResult] = await Promise.all([
+        this.indexForSearch(documentId, processing),
+        this.syncObsidianWiki(processing),
+      ]);
+      processing.chunksIndexed = chunksIndexed;
+      processing.wikiPagesWritten = wikiResult.pageCount;
+      processing.obsidianVaultSynced = wikiResult.vaultSynced;
       await this.extractAndPersistObligations(documentId, processing);
 
       return { document: serializeDocument(updated), processing };
@@ -148,6 +158,24 @@ export class DocumentRepository {
       });
       processing.warnings.push(message);
       return { document: serializeDocument(updated), processing };
+    }
+  }
+
+  private async syncObsidianWiki(
+    processing: DocumentProcessSummary,
+  ): Promise<{ pageCount: number; vaultSynced: boolean }> {
+    try {
+      const { syncObsidianVault } = await import("@/services/wiki");
+      const result = await syncObsidianVault();
+      return {
+        pageCount: result.pageCount,
+        vaultSynced: result.vaultSynced,
+      };
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : "Obsidian wiki sync failed";
+      processing.warnings.push(`Obsidian wiki not updated: ${msg}`);
+      return { pageCount: 0, vaultSynced: false };
     }
   }
 

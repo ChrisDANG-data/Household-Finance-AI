@@ -12,9 +12,10 @@ import type { FinancialState } from "@/services/financial-state/state.types";
 
 import { ensureAffordabilitySummary } from "./affordability-summary";
 import { tryDeterministicLedgerAnswer } from "./deterministic-ledger";
+import { tryForecastTrendAnswer } from "./forecast-trend-lookup";
 import { parseScenarioMessage } from "./intent-parser";
 import { tryCategoryPaymentAnswer } from "./category-lookup";
-import { shouldUseLangGraph } from "./route-classifier";
+import { resolveUseLangGraph } from "./route-classifier";
 import { applyScenarioToState } from "./scenario-builder";
 import type {
   HandleScenarioMessageInput,
@@ -300,11 +301,29 @@ export async function handleScenarioMessage(
 
   const baseline = runEngines(input.financial_state, months, startMonth);
 
-  // Hybrid step 1: fast deterministic ledger — skip when question needs multi-agent/advisor
-  const skipDeterministicLedger = shouldUseLangGraph(
+  const forecastTrendAnswer = tryForecastTrendAnswer(
+    input.message,
+    input.financial_state,
+    months,
+    startMonth,
+  );
+  if (forecastTrendAnswer) {
+    return buildLedgerResponse(
+      parsed,
+      baseline,
+      forecastTrendAnswer,
+      "deterministic_ledger",
+    );
+  }
+
+  const useLangGraphRoute = resolveUseLangGraph(
     input.message,
     input.analyst_mode,
+    input.langgraph_enabled,
   );
+
+  // Hybrid step 1: fast deterministic ledger — skip when question needs multi-agent/advisor
+  const skipDeterministicLedger = useLangGraphRoute;
   const deterministicAnswer = skipDeterministicLedger
     ? null
     : await tryDeterministicLedgerAnswer(input.message);
@@ -318,7 +337,7 @@ export async function handleScenarioMessage(
   }
 
   // Hybrid step 2: LangGraph multi-agent for complex / forced specialist mode
-  if (shouldUseLangGraph(input.message, input.analyst_mode)) {
+  if (useLangGraphRoute) {
     const langGraphResult = await orchestrateWithLangGraph({
       message: input.message,
       user_id: input.user_id,
@@ -384,7 +403,7 @@ export async function handleScenarioMessage(
   }
 
   // Hybrid step 3: ledger + RAG LLM for non-complex questions only
-  if (!shouldUseLangGraph(input.message, input.analyst_mode)) {
+  if (!useLangGraphRoute) {
     const docAnswer = await tryDocumentAnswer(
       input.message,
       input.ai_provider,

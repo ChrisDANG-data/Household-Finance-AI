@@ -8,6 +8,7 @@ import { AiProviderSwitch } from "@/components/ai/AiProviderSwitch";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
+  { href: "/", label: "Home", exact: true },
   { href: "/documents", label: "Documents" },
   { href: "/ledger", label: "Ledger" },
   { href: "/balances", label: "Balances" },
@@ -40,11 +41,13 @@ export function FloatingNav() {
       </Link>
 
       <nav className="hidden items-center gap-1 md:flex">
-        {NAV_LINKS.map(({ href, label }) => {
+        {NAV_LINKS.map(({ href, label, ...link }) => {
           const active =
-            href === "/simulation"
-              ? pathname.startsWith("/simulation")
-              : pathname.startsWith(href);
+            "exact" in link && link.exact
+              ? pathname === href
+              : href === "/simulation"
+                ? pathname.startsWith("/simulation")
+                : pathname.startsWith(href);
           return (
             <Link
               key={href}

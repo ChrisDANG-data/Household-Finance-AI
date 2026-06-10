@@ -5,7 +5,6 @@ interface EngineModuleLayoutProps {
   subtitle: string;
   children: React.ReactNode;
   wide?: boolean;
-  toolbar?: React.ReactNode;
 }
 
 export function EngineModuleLayout({
@@ -13,7 +12,6 @@ export function EngineModuleLayout({
   subtitle,
   children,
   wide = false,
-  toolbar,
 }: EngineModuleLayoutProps) {
   return (
     <div
@@ -30,8 +28,6 @@ export function EngineModuleLayout({
           {subtitle}
         </p>
       </div>
-
-      {toolbar ? <div className="relative mb-6">{toolbar}</div> : null}
 
       <div className="glass-card relative overflow-hidden rounded-3xl border-emerald-500/15 p-6 shadow-xl sm:p-8">
         {children}

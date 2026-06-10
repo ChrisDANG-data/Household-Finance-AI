@@ -5,6 +5,7 @@ import type {
   DocumentUploadResponse,
   ExtractionConfirmResult,
   ExtractionPreviewResult,
+  ObsidianWikiSyncResult,
   ReviewableObligation,
 } from "@/types/documents";
 import type { MonthlyObligationSummary } from "@/services/financial-state/obligation-summary";
@@ -25,6 +26,43 @@ async function parseApi<T>(response: Response): Promise<T> {
     throw new Error(body.error.message);
   }
   return body.data;
+}
+
+export async function syncObsidianWiki(): Promise<ObsidianWikiSyncResult> {
+  return parseApi(
+    await fetch("/api/wiki/sync", {
+      method: "POST",
+    }),
+  );
+}
+
+/** Triggers browser download of the Obsidian vault ZIP. */
+export async function downloadObsidianVaultZip(): Promise<void> {
+  const response = await fetch("/api/wiki/export", { cache: "no-store" });
+  if (!response.ok) {
+    const raw = await response.text();
+    try {
+      const body = JSON.parse(raw) as ApiResponse<unknown>;
+      if (!body.success) {
+        throw new Error(body.error.message);
+      }
+    } catch {
+      throw new Error(`Download failed (${response.status})`);
+    }
+    throw new Error(`Download failed (${response.status})`);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? "finintel-obsidian-vault.zip";
+
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export async function fetchDocuments(): Promise<SerializedDocument[]> {

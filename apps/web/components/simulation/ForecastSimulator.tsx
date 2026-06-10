@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 
 import { useAiProvider } from "@/hooks/use-ai-provider";
+import { useLangGraphMode } from "@/hooks/use-langgraph-mode";
 import { GoogleVoiceAskButton } from "@/components/ai/GoogleVoiceAskButton";
+import { LangGraphModeSwitch } from "@/components/ai/LangGraphModeSwitch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1100,6 +1102,8 @@ function WhatIfScenarioPanel({
 function ChatInput() {
   const router = useRouter();
   const { provider } = useAiProvider();
+  const { mode: langGraphMode, setMode: setLangGraphMode, loaded: langGraphModeLoaded, langgraphEnabled } =
+    useLangGraphMode();
   const [question, setQuestion] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1124,6 +1128,7 @@ function ChatInput() {
           months: 6,
           use_llm: true,
           ai_provider: provider,
+          langgraph_enabled: langgraphEnabled,
         }),
       });
       const raw = await res.text();
@@ -1175,11 +1180,18 @@ function ChatInput() {
       id="fi-ai-qa"
       className="glass-card glow-border scroll-mt-32 overflow-hidden rounded-2xl border-emerald-500/25"
     >
-      <div className="flex items-center gap-2.5 border-b border-border/60 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent px-5 py-3">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25">
-          <Sparkles className="size-3.5" />
-        </span>
-        <h2 className="font-semibold tracking-tight">Ask AI about your finances</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent px-5 py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25">
+            <Sparkles className="size-3.5" />
+          </span>
+          <h2 className="font-semibold tracking-tight">Ask AI about your finances</h2>
+        </div>
+        <LangGraphModeSwitch
+          mode={langGraphMode}
+          onModeChange={setLangGraphMode}
+          loaded={langGraphModeLoaded}
+        />
       </div>
       <div className="p-5">
         <form onSubmit={handleAsk} className="flex items-center gap-2.5">

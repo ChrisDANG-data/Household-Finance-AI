@@ -76,4 +76,6 @@ export interface HandleScenarioMessageInput {
   ai_provider?: AiProvider;
   /** auto = hybrid router; cost | investment | payments = single LangGraph specialist */
   analyst_mode?: "auto" | "cost" | "investment" | "payments";
+  /** false = skip LangGraph; true/undefined = hybrid routing when service is enabled */
+  langgraph_enabled?: boolean;
 }

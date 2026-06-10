@@ -72,6 +72,32 @@ export function isComplexMultiAgentQuery(message: string): boolean {
     return true;
   }
 
+  // Forecast MoM / average % growth over upcoming months
+  if (/\bmonth[- ]over[- ]month\b/.test(text) || /\bmom\b/.test(text)) {
+    return true;
+  }
+
+  if (
+    /\b(average|avg)\b/.test(text) &&
+    /\b(increase|growth|change)\b/.test(text)
+  ) {
+    return true;
+  }
+
+  if (
+    /%|percent|percentage/.test(text) &&
+    /\b(increase|growth|trend)\b/.test(text)
+  ) {
+    return true;
+  }
+
+  if (
+    /%/.test(text) &&
+    /\b(next|following|over)\s+\d+\s*months?/.test(text)
+  ) {
+    return true;
+  }
+
   return false;
 }
 
@@ -92,4 +118,14 @@ export function shouldUseLangGraph(
 ): boolean {
   if (isForcedAnalystMode(analystMode)) return true;
   return isComplexMultiAgentQuery(message);
+}
+
+/** UI hybrid toggle: false skips LangGraph; true/undefined uses hybrid classifier. */
+export function resolveUseLangGraph(
+  message: string,
+  analystMode?: AnalystMode,
+  langgraphEnabled?: boolean,
+): boolean {
+  if (langgraphEnabled === false) return false;
+  return shouldUseLangGraph(message, analystMode);
 }

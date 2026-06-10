@@ -48,6 +48,8 @@ export async function POST(request: Request) {
       {
         document: result.document,
         chunksIndexed: result.processing.chunksIndexed,
+        wikiPagesWritten: result.processing.wikiPagesWritten,
+        obsidianVaultSynced: result.processing.obsidianVaultSynced,
         obligationsSaved: result.processing.obligationsSaved,
         detectedObligations: result.processing.detectedObligations,
         warnings: result.processing.warnings,

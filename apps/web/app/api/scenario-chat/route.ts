@@ -24,6 +24,7 @@ interface ScenarioChatBody {
   stream?: boolean;
   ai_provider?: "claude" | "gemini";
   analyst_mode?: "auto" | "cost" | "investment" | "payments";
+  langgraph_enabled?: boolean;
 }
 
 async function resolveFinancialState(body: ScenarioChatBody): Promise<FinancialState> {
@@ -67,6 +68,7 @@ async function runScenarioChat(body: ScenarioChatBody) {
     use_llm: body.use_llm,
     ai_provider: body.ai_provider,
     analyst_mode: body.analyst_mode,
+    langgraph_enabled: body.langgraph_enabled,
   });
 }
 

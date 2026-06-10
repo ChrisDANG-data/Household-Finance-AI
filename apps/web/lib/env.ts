@@ -92,6 +92,14 @@ export const env = {
     writerEnabled: () =>
       optionalEnv("LANGGRAPH_WRITER_ENABLED", "false") === "true",
   },
+
+  obsidian: {
+    /** Local folder Obsidian opens as a vault; optional (ZIP export always works). */
+    vaultPath: () => {
+      const value = optionalEnv("OBSIDIAN_VAULT_PATH").trim();
+      return value.length > 0 ? value : null;
+    },
+  },
 } as const;
 
 export function isDevelopment(): boolean {
