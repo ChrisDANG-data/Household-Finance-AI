@@ -11,6 +11,13 @@ import {
   prismaEventToDomain,
 } from "./event.mapper";
 import { financialStateEngine } from "./engine";
+import { validateFinancialAmount } from "./amount-validation";
+import {
+  dedupeFinancialEventsForProjection,
+  exactDedupeKey,
+  findExactDuplicate,
+  findRecurringStreamDuplicate,
+} from "./event-dedupe";
 import { normalizeFinancialEvents } from "./normalize";
 import type {
   FinancialState,
@@ -94,6 +101,34 @@ async function ensureSourceDocument(documentId: string | null | undefined): Prom
  * FinancialTimelineState and computed fields are derived at read time, never stored.
  */
 export class FinancialStatePersistence {
+  private assertEventAmount(event: FinancialEvent): void {
+    validateFinancialAmount(event.amount, { allowZero: false });
+  }
+
+  private async assertEventWritable(
+    userId: string,
+    event: FinancialEvent,
+    excludeId?: string,
+  ): Promise<void> {
+    this.assertEventAmount(event);
+
+    const existing = await this.listEvents(userId);
+    if (findExactDuplicate(event, existing, excludeId)) {
+      throw new AppError(
+        "An identical financial event already exists in your ledger",
+        { code: "VALIDATION_ERROR", statusCode: 400 },
+      );
+    }
+
+    const streamDup = findRecurringStreamDuplicate(event, existing, excludeId);
+    if (streamDup) {
+      throw new AppError(
+        `A matching recurring ${event.category.replace(/_/g, " ")} entry already exists. Update the existing event or change amount, owner, or frequency.`,
+        { code: "VALIDATION_ERROR", statusCode: 400 },
+      );
+    }
+  }
+
   async ensureState(userId: string = DEFAULT_USER_ID): Promise<void> {
     await prisma.financialState.upsert({
       where: { userId },
@@ -142,7 +177,9 @@ export class FinancialStatePersistence {
       });
     }
 
-    const events = row.events.map(prismaEventToDomain);
+    const events = dedupeFinancialEventsForProjection(
+      row.events.map(prismaEventToDomain),
+    );
     return financialStateEngine.withComputed(
       {
         user_id: userId,
@@ -213,6 +250,7 @@ export class FinancialStatePersistence {
     }
 
     validateConfidence(normalized.confidence);
+    await this.assertEventWritable(userId, normalized);
 
     const row = await prisma.financialEvent.create({
       data: {
@@ -290,6 +328,7 @@ export class FinancialStatePersistence {
     }
 
     validateConfidence(normalized.confidence);
+    await this.assertEventWritable(existing.userId, normalized, id);
 
     const row = await prisma.financialEvent.update({
       where: { id },
@@ -333,9 +372,26 @@ export class FinancialStatePersistence {
   ): Promise<FinancialEvent[]> {
     await this.ensureState(userId);
     const normalized = normalizeFinancialEvents(events);
+    const existing = await this.listEvents(userId);
     const created: FinancialEvent[] = [];
+    const pendingKeys = new Set<string>();
 
     for (const event of normalized) {
+      try {
+        this.assertEventAmount(event);
+      } catch {
+        continue;
+      }
+
+      const exactKey = exactDedupeKey(event);
+      if (pendingKeys.has(exactKey)) continue;
+      if (findExactDuplicate(event, existing, undefined)) continue;
+      if (findRecurringStreamDuplicate(event, [...existing, ...created], undefined)) {
+        continue;
+      }
+
+      pendingKeys.add(exactKey);
+
       const row = await prisma.financialEvent.create({
         data: {
           userId,

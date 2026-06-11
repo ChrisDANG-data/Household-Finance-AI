@@ -3,6 +3,7 @@ import type { FinancialEventFrequency, FinancialEventType } from "@prisma/client
 import { prisma } from "@/lib/prisma";
 import { llmComplete } from "@/services/ai/llm/llm.service";
 import type { AiProvider } from "@/services/ai/llm/types";
+import { validateFinancialAmount } from "@/services/financial-state/amount-validation";
 import { AppError } from "@/utils/errors";
 import { financialStatePersistence, DEFAULT_USER_ID } from "@/services/financial-state/financial-state.persistence";
 
@@ -63,16 +64,21 @@ Rules:
 - Return ONLY a valid JSON array, no other text`;
 
 function normalizeObligation(raw: ExtractedObligation): ExtractedObligation {
+  const amount = Number(raw.amount) || 0;
   return {
     name: String(raw.name || "").trim() || "Unnamed",
     category: String(raw.category || "other").trim().toLowerCase().replace(/\s+/g, "_"),
-    amount: Number(raw.amount) || 0,
+    amount,
     currency: String(raw.currency || "CAD").trim().toUpperCase(),
     frequency: String(raw.frequency || "monthly").trim().toLowerCase(),
     startDate: String(raw.startDate || new Date().toISOString().slice(0, 10)),
     endDate: raw.endDate ? String(raw.endDate) : null,
     notes: raw.notes ? String(raw.notes) : null,
   };
+}
+
+function assertSaveableObligationAmount(amount: number): void {
+  validateFinancialAmount(amount, { allowZero: false, field: "obligation amount" });
 }
 
 /**
@@ -167,7 +173,15 @@ export class DocumentExtractionService {
 
     const saveable = obligations
       .map(normalizeObligation)
-      .filter((ob) => ob.amount > 0);
+      .filter((ob) => {
+        if (ob.amount <= 0) return false;
+        try {
+          assertSaveableObligationAmount(ob.amount);
+          return true;
+        } catch {
+          return false;
+        }
+      });
 
     let savedCount = 0;
     for (const ob of saveable) {

@@ -10,6 +10,7 @@ import {
 import { isValidFrequency } from "@/services/financial-state/obligation.mapper";
 import { currentUtcMonth, parseMonth } from "@/services/financial-state/dates";
 import type { FinancialEventFrequency } from "@/services/financial-state/types";
+import { validateFinancialAmount } from "@/services/financial-state/amount-validation";
 import { AppError } from "@/utils/errors";
 
 export interface CreateObligationInput {
@@ -44,12 +45,7 @@ function parseDateOnly(value: string, field: string): Date {
 }
 
 function validateAmount(amount: number): void {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new AppError("amount must be a positive number", {
-      code: "VALIDATION_ERROR",
-      statusCode: 400,
-    });
-  }
+  validateFinancialAmount(amount, { allowZero: false });
 }
 
 function validateName(name: string): void {
