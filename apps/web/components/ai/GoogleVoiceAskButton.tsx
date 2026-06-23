@@ -34,10 +34,9 @@ export function GoogleVoiceAskButton({
   const recordingSttProvider: RecordingSttProvider =
     provider === "claude" ? "local" : "gemini";
 
+  /** Enable record+STT when any backend exists; stay enabled while config loads. */
   const recordingFallback =
-    providerLoaded &&
-    ((provider === "claude" && localSttAvailable) ||
-      (provider === "gemini" && geminiAvailable));
+    !providerLoaded || localSttAvailable || geminiAvailable;
 
   useEffect(() => {
     sessionStorage.removeItem("fi-voice-prefer-record");
@@ -67,9 +66,15 @@ export function GoogleVoiceAskButton({
         processing && "border-amber-500/50 bg-amber-500/10",
         className,
       )}
-      disabled={disabled || processing}
+      disabled={disabled || processing || !providerLoaded}
       onClick={toggle}
-      title={listening ? "Stop listening" : "Voice input"}
+      title={
+        !providerLoaded
+          ? "Loading voice settings…"
+          : listening
+            ? "Stop listening"
+            : "Voice input (click to start, speak, click again to stop)"
+      }
       aria-label={listening ? "Stop listening" : "Start voice input"}
       aria-pressed={listening}
     >

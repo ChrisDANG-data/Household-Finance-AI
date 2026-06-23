@@ -3,7 +3,7 @@ import { withApiHandler } from "@/lib/api/route-handler";
 import { documentRepository } from "@/services/document-intelligence/document.repository";
 import { AppError } from "@/utils/errors";
 import type { DocumentMimeType } from "@/types/documents";
-import { isAllowedDocumentMimeType } from "@/utils/file";
+import { resolveDocumentMimeType } from "@/utils/file";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -29,12 +29,18 @@ export async function POST(request: Request) {
       });
     }
 
-    const mimeType = file.type || "application/octet-stream";
-    if (!isAllowedDocumentMimeType(mimeType)) {
-      throw new AppError(`Unsupported file type: ${mimeType}`, {
-        code: "UNSUPPORTED_MIME_TYPE",
-        statusCode: 400,
-      });
+    const mimeType = resolveDocumentMimeType(
+      file.type || "application/octet-stream",
+      file.name || "upload",
+    );
+    if (!mimeType) {
+      throw new AppError(
+        `Unsupported file type: ${file.type || "unknown"} (${file.name}). Use PDF, PNG, JPEG, WebP, or TIFF.`,
+        {
+          code: "UNSUPPORTED_MIME_TYPE",
+          statusCode: 400,
+        },
+      );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

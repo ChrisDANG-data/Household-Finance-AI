@@ -17,14 +17,16 @@ export interface ClaudeMessageResponse {
   usage?: LlmTokenUsage;
 }
 
+export const DEFAULT_ANTHROPIC_MODEL =
+  process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
+
 /**
  * Claude API abstraction — Messages API only; no financial logic.
  */
 export class ClaudeClient {
   private readonly apiUrl = "https://api.anthropic.com/v1/messages";
   private readonly apiVersion = "2023-06-01";
-  private readonly defaultModel =
-    process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
+  private readonly defaultModel = DEFAULT_ANTHROPIC_MODEL;
 
   async complete(request: ClaudeMessageRequest): Promise<ClaudeMessageResponse> {
     const apiKey = env.ai.anthropicApiKey();

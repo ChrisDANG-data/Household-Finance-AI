@@ -14,7 +14,7 @@ updated: 2026-06-10
 - [[10_Logs/LLM Calls Summary]]
 
 ## Product (auto-generated)
-- [[Household/Household Index]]
+- [[Household/README]]
 
 ## Quick actions
 - Run `npm run sync:obsidian` after doc changes or LLM logging

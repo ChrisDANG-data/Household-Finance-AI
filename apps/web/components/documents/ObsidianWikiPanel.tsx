@@ -3,12 +3,10 @@
 import { useState } from "react";
 import { Download, Network, RefreshCw } from "lucide-react";
 
+import { syncObsidianVaultAction } from "@/app/documents/actions/sync-obsidian-vault";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  downloadObsidianVaultZip,
-  syncObsidianWiki,
-} from "@/lib/api/client";
+import { downloadObsidianVaultZip } from "@/lib/api/client";
 
 export function ObsidianWikiPanel() {
   const [syncing, setSyncing] = useState(false);
@@ -21,11 +19,18 @@ export function ObsidianWikiPanel() {
     setError(null);
     setMessage(null);
     try {
-      const result = await syncObsidianWiki();
-      setMessage(result.message);
-      if (result.vaultSynced && result.vaultPath) {
-        setMessage(`${result.message} Path: ${result.vaultPath}`);
+      const result = await syncObsidianVaultAction();
+      if (!result.vaultSynced) {
+        setError(
+          `${result.message} On Vercel, use Download vault ZIP. Locally, set OBSIDIAN_VAULT_PATH in apps/web/.env or run npm run sync:household-wiki.`,
+        );
+        return;
       }
+      setMessage(
+        result.vaultPath
+          ? `${result.message} Path: ${result.vaultPath}`
+          : result.message,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sync failed");
     } finally {
@@ -87,7 +92,7 @@ export function ObsidianWikiPanel() {
           Notes are written under{" "}
           <code className="rounded bg-muted px-1 py-0.5">Household/Documents/</code>{" "}
           in your vault — open{" "}
-          <code className="rounded bg-muted px-1 py-0.5">Household/Household Index.md</code>{" "}
+          <code className="rounded bg-muted px-1 py-0.5">Household/README.md</code>{" "}
           in Obsidian. Local sync requires{" "}
           <code className="rounded bg-muted px-1 py-0.5">OBSIDIAN_VAULT_PATH</code>{" "}
           in <code className="rounded bg-muted px-1 py-0.5">apps/web/.env</code>.

@@ -1218,6 +1218,10 @@ function ChatInput() {
             )}
           </Button>
         </form>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Voice: click mic, speak for 2+ seconds, click mic again to stop. Use
+          Chrome or Edge if the browser blocks speech.
+        </p>
         {voiceError ? (
           <p className="mt-3 text-sm text-destructive" role="alert">
             {voiceError}

@@ -1,11 +1,12 @@
 # grocery
 
-Back to [[Household/Household Index]].
+Back to [[Household/README]].
 
 ## Source documents
 
 ## Ledger events
 - [[Household/Events/cmpyfwtip0001jj04owx3r9lx]] — $400.00 / one_time
+- [[Household/Events/cmqqywcy30001l404vnwe6t13]] — $85.00 / one_time
 - [[Household/Events/cmqb9wumx0001ky04t82jzfqz]] — $85.00 / one_time
 - [[Household/Events/cmpzxqvlq0003jy05prqkfdy6]] — $85.00 / one_time
 - [[Household/Events/cmpzkeea00001l804w9l4me4o]] — $85.00 / one_time

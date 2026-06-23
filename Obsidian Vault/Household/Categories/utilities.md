@@ -1,6 +1,6 @@
 # utilities
 
-Back to [[Household/Household Index]].
+Back to [[Household/README]].
 
 ## Source documents
 

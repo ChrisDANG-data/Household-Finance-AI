@@ -12,6 +12,15 @@ import type { MonthlyObligationSummary } from "@/services/financial-state/obliga
 
 async function parseApi<T>(response: Response): Promise<T> {
   const raw = await response.text();
+  if (!response.ok) {
+    const hint =
+      raw.trimStart().startsWith("<!DOCTYPE") || raw.trimStart().startsWith("<html")
+        ? `Server returned HTML (${response.status}). Is npm run dev running? Try npm run sync:household-wiki from the repo root.`
+        : raw.trim().length > 0
+          ? raw.slice(0, 240)
+          : `Request failed (${response.status})`;
+    throw new Error(hint);
+  }
   let body: ApiResponse<T>;
   try {
     body = JSON.parse(raw) as ApiResponse<T>;
@@ -95,6 +104,17 @@ export async function previewDocumentExtraction(
         documentId,
         ...(aiProvider ? { ai_provider: aiProvider } : {}),
       }),
+    }),
+  );
+}
+
+/** Re-run text extraction, indexing, and obligation detection. */
+export async function retryDocumentExtraction(
+  documentId: string,
+): Promise<DocumentUploadResponse> {
+  return parseApi(
+    await fetch(`/api/documents/upload/${documentId}`, {
+      method: "POST",
     }),
   );
 }

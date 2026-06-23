@@ -54,12 +54,6 @@ function browserBlockedMessage(stt: RecordingSttProvider | undefined): string {
   return "Browser speech could not reach Google (VPN/firewall/ad blocker). Type your question.";
 }
 
-function fallbackStartMessage(stt: RecordingSttProvider): string {
-  return stt === "local"
-    ? "Browser speech blocked — recording (free local Whisper). Speak, then click mic again."
-    : "Browser speech blocked — recording for Gemini. Speak, then click mic again.";
-}
-
 export function useGoogleVoiceInput({
   onTranscript,
   onError,
@@ -157,12 +151,23 @@ export function useGoogleVoiceInput({
           method: "POST",
           body: formData,
         });
-        const json = (await res.json()) as {
+        const raw = await res.text();
+        let json: {
           success: boolean;
           data?: { text: string };
           error?: { message: string; code?: string };
         };
-        if (!json.success || !json.data?.text) {
+        try {
+          json = JSON.parse(raw) as typeof json;
+        } catch {
+          const hint =
+            raw.trimStart().startsWith("<!DOCTYPE") ||
+            raw.trimStart().startsWith("<html")
+              ? `Voice API unavailable (${res.status}). Is npm run dev running?`
+              : `Voice transcription failed (${res.status}).`;
+          throw new Error(hint);
+        }
+        if (!res.ok || !json.success || !json.data?.text) {
           throw new Error(json.error?.message ?? "Transcription failed");
         }
         gotTranscriptRef.current = true;
@@ -244,7 +249,7 @@ export function useGoogleVoiceInput({
   }, [recordingFallbackEnabled, onError, transcribeRecording]);
 
   const switchToRecordingFallback = useCallback(
-    (reason: string) => {
+    (_reason?: string) => {
       storePreferRecording(sttProviderRef.current);
       networkFailedRef.current = true;
       try {
@@ -253,10 +258,9 @@ export function useGoogleVoiceInput({
         // ignore
       }
       recognitionRef.current = null;
-      onError?.(reason);
       void startRecordingSession();
     },
-    [onError, startRecordingSession],
+    [startRecordingSession],
   );
 
   const startBrowserRecognition = useCallback(() => {
@@ -300,7 +304,7 @@ export function useGoogleVoiceInput({
 
       if (event.error === "network" || event.error === "service-not-allowed") {
         if (recordingFallbackEnabled) {
-          switchToRecordingFallback(fallbackStartMessage(sttProviderRef.current));
+          switchToRecordingFallback();
         } else {
           networkFailedRef.current = true;
           sessionActiveRef.current = false;

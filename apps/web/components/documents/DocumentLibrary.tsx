@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DocumentReanalyzeButton } from "@/components/documents/DocumentReanalyzeButton";
+import { DocumentRetryExtractionButton } from "@/components/documents/DocumentRetryExtractionButton";
 import { DocumentReviewButton } from "@/components/documents/DocumentReviewButton";
 import type { SerializedDocument } from "@/lib/serializers";
 
@@ -82,6 +83,9 @@ export function DocumentLibrary({ documents }: DocumentLibraryProps) {
             ) : null}
             {doc.extractionError ? (
               <p className="text-xs text-destructive">{doc.extractionError}</p>
+            ) : null}
+            {doc.extractionStatus === "FAILED" ? (
+              <DocumentRetryExtractionButton documentId={doc.id} />
             ) : null}
             {doc.extractedText ? (
               <details className="text-sm">
