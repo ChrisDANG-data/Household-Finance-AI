@@ -316,17 +316,15 @@ export async function handleScenarioMessage(
     );
   }
 
-  const useLangGraphRoute = resolveUseLangGraph(
+  // Always try deterministic ledger first (accurate month totals beat LLM/LangGraph)
+  const deterministicAnswer = await tryDeterministicLedgerAnswer(
     input.message,
-    input.analyst_mode,
-    input.langgraph_enabled,
+    {
+      state: input.financial_state,
+      startMonth,
+      forecastMonths: months,
+    },
   );
-
-  // Hybrid step 1: fast deterministic ledger — skip when question needs multi-agent/advisor
-  const skipDeterministicLedger = useLangGraphRoute;
-  const deterministicAnswer = skipDeterministicLedger
-    ? null
-    : await tryDeterministicLedgerAnswer(input.message);
   if (deterministicAnswer) {
     return buildLedgerResponse(
       parsed,
@@ -335,6 +333,12 @@ export async function handleScenarioMessage(
       "deterministic_ledger",
     );
   }
+
+  const useLangGraphRoute = resolveUseLangGraph(
+    input.message,
+    input.analyst_mode,
+    input.langgraph_enabled,
+  );
 
   // Hybrid step 2: LangGraph multi-agent for complex / forced specialist mode
   if (useLangGraphRoute) {

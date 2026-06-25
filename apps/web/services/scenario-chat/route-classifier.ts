@@ -1,3 +1,5 @@
+import { isSimpleMonthForecastQuery } from "./monthly-lookup";
+
 /** Specialist selection for LangGraph hybrid routing. */
 export type AnalystMode = "auto" | "cost" | "investment" | "payments";
 
@@ -12,6 +14,11 @@ export type OrchestratorRoute =
  */
 export function isComplexMultiAgentQuery(message: string): boolean {
   const text = message.trim().toLowerCase();
+
+  // Month-specific ledger totals — handled deterministically, not LangGraph
+  if (isSimpleMonthForecastQuery(message)) {
+    return false;
+  }
 
   if (
     /\b(can i afford|could i afford|afford to|afford a|afford an|afford another|do i have enough)\b/.test(

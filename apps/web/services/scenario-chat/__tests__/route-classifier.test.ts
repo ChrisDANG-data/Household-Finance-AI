@@ -22,6 +22,10 @@ describe("route-classifier", () => {
     expect(
       shouldUseLangGraph("Total expenses in August"),
     ).toBe(false);
+    expect(isComplexMultiAgentQuery("What is my closing balance in July?")).toBe(
+      false,
+    );
+    expect(isComplexMultiAgentQuery("What is my balance in July?")).toBe(false);
   });
 
   it("routes afford-another-car-lease questions to LangGraph", () => {

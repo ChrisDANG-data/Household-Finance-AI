@@ -136,4 +136,34 @@ describe("Scenario Chat — orchestrator", () => {
     expect(a.structured_data.timeline).toEqual(b.structured_data.timeline);
     expect(a.structured_data.risk).toEqual(b.structured_data.risk);
   });
+
+  it("answers July income via deterministic ledger route", async () => {
+    const response = await handleScenarioMessage({
+      message: "What is my income in July?",
+      user_id: state.user_id,
+      financial_state: state,
+      months: 12,
+      forecast_start_month: FORECAST_START_MONTH,
+      use_llm: false,
+      langgraph_enabled: true,
+    });
+
+    expect(response.orchestrator_route).toBe("deterministic_ledger");
+    expect(response.explanation).toMatch(/Total income in July 2026/i);
+  });
+
+  it("answers July closing balance via deterministic ledger route", async () => {
+    const response = await handleScenarioMessage({
+      message: "What is my closing balance in July?",
+      user_id: state.user_id,
+      financial_state: state,
+      months: 12,
+      forecast_start_month: FORECAST_START_MONTH,
+      use_llm: false,
+      langgraph_enabled: true,
+    });
+
+    expect(response.orchestrator_route).toBe("deterministic_ledger");
+    expect(response.explanation).toMatch(/Closing balance in July 2026/i);
+  });
 });

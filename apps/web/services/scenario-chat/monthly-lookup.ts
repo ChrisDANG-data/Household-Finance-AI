@@ -1,11 +1,13 @@
+import { currentUtcMonth } from "@/services/financial-state/dates";
 import {
-  monthlyEquivalentAmount,
   projectMonth,
+  simulateForecast,
 } from "@/services/financial-state/projection";
 import {
   DEFAULT_USER_ID,
   financialStatePersistence,
 } from "@/services/financial-state/financial-state.persistence";
+import type { FinancialState } from "@/services/financial-state/state.types";
 import type { FinancialEvent } from "@/services/financial-state/types";
 
 const MONTH_NAMES = [
@@ -81,16 +83,24 @@ function isMonthlyAggregationQuery(message: string): boolean {
   const month = extractTargetMonth(message);
   if (!month) return false;
   const lower = message.toLowerCase();
-  return (
-    lower.includes("total") ||
-    lower.includes("expense") ||
-    lower.includes("income") ||
-    lower.includes("cash flow") ||
-    lower.includes("net cash") ||
-    lower.includes("how much") ||
-    lower.includes("breakdown") ||
-    lower.includes("payment")
-  );
+  const keywords = [
+    "total",
+    "expense",
+    "income",
+    "cash flow",
+    "net cash",
+    "how much",
+    "breakdown",
+    "payment",
+    "balance",
+    "closing",
+    "opening",
+  ];
+  return keywords.some((word) => lower.includes(word));
+}
+
+export function isSimpleMonthForecastQuery(message: string): boolean {
+  return isMonthlyAggregationQuery(message);
 }
 
 function eventAmountForMonth(event: FinancialEvent): number {
@@ -116,10 +126,24 @@ function formatLine(category: string, amount: number): string {
   return `• ${label}${signed}`;
 }
 
-type QueryKind = "net_cash_flow" | "expenses" | "income";
+type QueryKind =
+  | "net_cash_flow"
+  | "expenses"
+  | "income"
+  | "closing_balance"
+  | "opening_balance";
 
 function detectQueryKind(message: string): QueryKind {
   const lower = message.toLowerCase();
+  if (lower.includes("closing") && lower.includes("balance")) {
+    return "closing_balance";
+  }
+  if (lower.includes("opening") && lower.includes("balance")) {
+    return "opening_balance";
+  }
+  if (/\bbalance\b/.test(lower) && !lower.includes("cash flow")) {
+    return "closing_balance";
+  }
   if (lower.includes("net cash") || lower.includes("cash flow")) {
     return "net_cash_flow";
   }
@@ -128,25 +152,48 @@ function detectQueryKind(message: string): QueryKind {
   return "net_cash_flow";
 }
 
+export interface MonthLookupOptions {
+  state?: FinancialState;
+  startMonth?: string;
+  forecastMonths?: number;
+}
+
 /**
  * Deterministic month summary from projection engine (same logic as Forecast Simulation).
  * Returns null when the message is not a month-specific aggregation query.
  */
 export async function tryDeterministicMonthAnswer(
   message: string,
+  options?: MonthLookupOptions,
 ): Promise<string | null> {
   if (!isMonthlyAggregationQuery(message)) return null;
 
   const targetMonth = extractTargetMonth(message);
   if (!targetMonth) return null;
 
-  const state = await financialStatePersistence.loadState(
-    DEFAULT_USER_ID,
-    targetMonth,
-  );
+  const state =
+    options?.state ??
+    (await financialStatePersistence.loadState(
+      DEFAULT_USER_ID,
+      options?.startMonth ?? targetMonth,
+    ));
+  const startMonth = options?.startMonth ?? currentUtcMonth();
   const entry = projectMonth(state, targetMonth, 0);
   const kind = detectQueryKind(message);
   const label = monthLabel(targetMonth);
+
+  if (kind === "closing_balance" || kind === "opening_balance") {
+    const horizon = Math.max(options?.forecastMonths ?? 12, 12);
+    const timeline = simulateForecast(state, horizon, startMonth);
+    const monthRow = timeline.find((row) => row.month === targetMonth);
+    if (!monthRow) {
+      return `No forecast data for ${label} — month is outside the current ${horizon}-month horizon (starts ${startMonth}).`;
+    }
+    if (kind === "opening_balance") {
+      return `Opening balance in ${label}: ${formatMoney(monthRow.opening_balance)}`;
+    }
+    return `Closing balance in ${label}: ${formatMoney(monthRow.closing_balance)}`;
+  }
 
   const incomeLines: string[] = [];
   const expenseLines: string[] = [];
