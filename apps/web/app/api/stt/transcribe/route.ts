@@ -13,9 +13,23 @@ type SttProvider = "gemini" | "whisper" | "local";
 function parseProvider(raw: FormDataEntryValue | null): SttProvider {
   if (raw === "whisper" || raw === "openai" || raw === "cloud") return "whisper";
   if (raw === "gemini") return "gemini";
-  if (raw === "local") return "local";
-  // Default: cloud Whisper when configured, else local Xenova
+  if (raw === "local") {
+    if (env.isVercel()) {
+      if (env.ai.whisperApiKey()?.trim()) return "whisper";
+      throw new AppError(
+        "Local voice is unavailable on Vercel. Add OPENAI_API_KEY (or OPENROUTER_API_KEY) in Vercel → Settings → Environment Variables, then redeploy.",
+        { code: "STT_NOT_CONFIGURED", statusCode: 503 },
+      );
+    }
+    return "local";
+  }
   if (env.ai.whisperApiKey()?.trim()) return "whisper";
+  if (env.isVercel()) {
+    throw new AppError(
+      "Voice on Vercel requires OPENAI_API_KEY (or OPENROUTER_API_KEY). Add it under Vercel Project Settings → Environment Variables, then redeploy.",
+      { code: "STT_NOT_CONFIGURED", statusCode: 503 },
+    );
+  }
   return "local";
 }
 

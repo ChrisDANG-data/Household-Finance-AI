@@ -163,13 +163,21 @@ export function useGoogleVoiceInput({
         try {
           json = JSON.parse(raw) as typeof json;
         } catch {
+          const isLocalDev =
+            typeof window !== "undefined" &&
+            (window.location.hostname === "localhost" ||
+              window.location.hostname === "127.0.0.1");
           const isHtml =
             raw.trimStart().startsWith("<!DOCTYPE") ||
             raw.trimStart().startsWith("<html");
           const hint = isHtml
             ? res.status >= 500
-              ? `Voice API server error (${res.status}). Restart: cd apps/web && npm run dev — then check the terminal for compile errors.`
-              : `Voice API unavailable (${res.status}). Is npm run dev running on http://localhost:3000?`
+              ? isLocalDev
+                ? `Voice API server error (${res.status}). Restart: cd apps/web && npm run dev — then check the terminal for compile errors.`
+                : `Voice failed on Vercel (${res.status}). Add OPENAI_API_KEY under Vercel → Project Settings → Environment Variables, then redeploy. Local Whisper does not run in production.`
+              : isLocalDev
+                ? `Voice API unavailable (${res.status}). Is npm run dev running on http://localhost:3000?`
+                : `Voice API unavailable (${res.status}). Check Vercel env vars (OPENAI_API_KEY) and redeploy.`
             : `Voice transcription failed (${res.status}).`;
           throw new Error(hint);
         }

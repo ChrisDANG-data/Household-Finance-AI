@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/env", () => ({
   env: {
+    isVercel: vi.fn(() => false),
     ai: {
       geminiApiKey: vi.fn(() => "test-gemini-key"),
     },
@@ -22,11 +23,20 @@ vi.mock("@/services/ai/stt/whisper-stt.service", () => ({
   transcribeAudioWithWhisper: vi.fn(async () => "hello from cloud whisper"),
 }));
 
+import { env } from "@/lib/env";
 import { transcribeWithFallback } from "@/services/ai/stt/transcribe-with-fallback";
 
 describe("transcribeWithFallback", () => {
   afterEach(() => {
     delete process.env.STT_GEMINI_FALLBACK;
+    vi.mocked(env.isVercel).mockReturnValue(false);
+  });
+
+  it("rejects local STT on Vercel with a clear message", async () => {
+    vi.mocked(env.isVercel).mockReturnValue(true);
+    await expect(
+      transcribeWithFallback(Buffer.from("fake-audio"), "audio/webm", "local"),
+    ).rejects.toThrow(/Vercel/i);
   });
 
   it("uses cloud Whisper when provider is whisper", async () => {

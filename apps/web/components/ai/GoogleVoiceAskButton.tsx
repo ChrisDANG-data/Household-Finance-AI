@@ -37,14 +37,17 @@ export function GoogleVoiceAskButton({
       ? "gemini"
       : cloudSttAvailable
         ? "whisper"
-        : "local";
+        : localSttAvailable
+          ? "local"
+          : "whisper";
 
-  /** Enable record+STT when any backend exists; stay enabled while config loads. */
-  const recordingFallback =
-    !providerLoaded ||
-    cloudSttAvailable ||
-    localSttAvailable ||
-    geminiAvailable;
+  const canRecordTranscribe =
+    provider === "gemini"
+      ? geminiAvailable
+      : cloudSttAvailable || localSttAvailable;
+
+  /** Enable record+STT when a backend exists; stay enabled while config loads. */
+  const recordingFallback = !providerLoaded || canRecordTranscribe;
 
   useEffect(() => {
     sessionStorage.removeItem("fi-voice-prefer-record");
@@ -75,14 +78,16 @@ export function GoogleVoiceAskButton({
         processing && "border-amber-500/50 bg-amber-500/10",
         className,
       )}
-      disabled={disabled || processing || !providerLoaded}
+      disabled={disabled || processing || !providerLoaded || !canRecordTranscribe}
       onClick={toggle}
       title={
         !providerLoaded
           ? "Loading voice settings…"
-          : listening
-            ? "Stop listening"
-            : "Voice input (click to start, speak, click again to stop)"
+          : !canRecordTranscribe && providerLoaded
+            ? "Voice unavailable — add OPENAI_API_KEY on Vercel (or use local dev)"
+            : listening
+              ? "Stop listening"
+              : "Voice input (click to start, speak, click again to stop)"
       }
       aria-label={listening ? "Stop listening" : "Start voice input"}
       aria-pressed={listening}

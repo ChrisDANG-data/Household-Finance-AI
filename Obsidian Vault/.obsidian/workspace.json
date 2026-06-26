@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "railway",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -74,7 +74,8 @@
               "title": "Bookmarks"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -180,7 +181,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "5396d30522773b89",
+  "active": "e91db26c95034738",
   "lastOpenFiles": [
     "Household/Documents/251220e9-691e-4de6-b4e7-72028f0876ea.md",
     "Household/Events/cmqraqoy90003la042ufh02w7.md",

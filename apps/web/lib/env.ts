@@ -17,6 +17,7 @@ function optionalEnv(key: string, fallback = ""): string {
 
 export const env = {
   nodeEnv: optionalEnv("NODE_ENV", "development"),
+  isVercel: () => process.env.VERCEL === "1",
   databaseUrl: () => requireEnv("DATABASE_URL"),
   appUrl: optionalEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),
 

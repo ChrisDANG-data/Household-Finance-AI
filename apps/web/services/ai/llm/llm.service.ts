@@ -47,7 +47,7 @@ export function getAiProviderAvailability(): AiProviderAvailability {
   const gemini = isProviderConfigured("gemini");
   const stt_cloud = env.ai.hasCloudStt();
   const stt_local =
-    process.env.LOCAL_STT_ENABLED !== "false" && process.env.VERCEL !== "1";
+    process.env.LOCAL_STT_ENABLED !== "false" && !env.isVercel();
   return {
     claude,
     gemini,

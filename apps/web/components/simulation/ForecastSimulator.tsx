@@ -1099,7 +1099,7 @@ function WhatIfScenarioPanel({
 
 function ChatInput() {
   const router = useRouter();
-  const { provider, cloudSttAvailable } = useAiProvider();
+  const { provider, cloudSttAvailable, localSttAvailable } = useAiProvider();
   const [question, setQuestion] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1222,8 +1222,10 @@ function ChatInput() {
           {provider === "gemini"
             ? "Voice (Gemini): uses Google speech. Free tier has daily quotas."
             : cloudSttAvailable
-              ? "Voice (Claude): cloud Whisper via OpenAI (~$0.006/min). Set a real OPENAI_API_KEY in apps/web/.env if you see quota errors."
-              : "Voice (Claude): local Whisper on your PC. Click mic, speak 3+ seconds, click again. Add OPENAI_API_KEY in apps/web/.env for reliable paid cloud voice."}
+              ? "Voice (Claude): cloud Whisper (~$0.006/min). On Vercel, set OPENAI_API_KEY in Environment Variables."
+              : localSttAvailable
+                ? "Voice (Claude): local Whisper on your PC. Click mic, speak 3+ seconds, click again."
+                : "Voice unavailable on this host. Add OPENAI_API_KEY in Vercel env vars (production) or run npm run dev locally."}
         </p>
         {voiceError ? (
           <p className="mt-3 text-sm text-destructive" role="alert">
