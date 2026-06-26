@@ -1,5 +1,6 @@
 import { currentUtcMonth } from "@/services/financial-state/dates";
 import {
+  monthlyEquivalentAmount,
   projectMonth,
   simulateForecast,
 } from "@/services/financial-state/projection";
