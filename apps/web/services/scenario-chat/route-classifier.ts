@@ -21,7 +21,7 @@ export function isComplexMultiAgentQuery(message: string): boolean {
   }
 
   if (
-    /\b(can i afford|could i afford|afford to|afford a|afford an|afford another|do i have enough)\b/.test(
+    /\b(can i afford|could i afford|can we afford|could we afford|afford to|afford a|afford an|afford another|do i have enough|do we have enough)\b/.test(
       text,
     )
   ) {

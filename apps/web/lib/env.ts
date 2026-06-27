@@ -101,8 +101,24 @@ export const env = {
   },
 
   langgraph: {
-    orchestratorUrl: () => optionalEnv("LANGGRAPH_URL"),
-    enabled: () => optionalEnv("LANGGRAPH_ENABLED", "false") === "true",
+    orchestratorUrl: () => {
+      const explicit = optionalEnv("LANGGRAPH_URL").trim();
+      if (explicit) return explicit;
+      if (isDevelopment() && !env.isVercel()) {
+        return "http://127.0.0.1:8081";
+      }
+      return "";
+    },
+    enabled: () => {
+      const flag = optionalEnv("LANGGRAPH_ENABLED", "").trim().toLowerCase();
+      if (flag === "true") return true;
+      if (flag === "false") return false;
+      return (
+        isDevelopment() &&
+        !env.isVercel() &&
+        env.langgraph.orchestratorUrl().length > 0
+      );
+    },
     /** LLM narration layer after deterministic LangGraph specialists. */
     writerEnabled: () =>
       optionalEnv("LANGGRAPH_WRITER_ENABLED", "false") === "true",

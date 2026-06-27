@@ -12,6 +12,11 @@ describe("route-classifier", () => {
     expect(isComplexMultiAgentQuery("Can I afford a $500/month car payment?")).toBe(
       true,
     );
+    expect(
+      isComplexMultiAgentQuery(
+        "Can we afford a $500/month car payment starting next month?",
+      ),
+    ).toBe(true);
     expect(isComplexMultiAgentQuery("What if my income drops by 20%?")).toBe(
       true,
     );
