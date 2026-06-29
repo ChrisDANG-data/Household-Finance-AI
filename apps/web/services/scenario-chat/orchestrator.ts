@@ -12,6 +12,10 @@ import type { FinancialState } from "@/services/financial-state/state.types";
 
 import { ensureAffordabilitySummary } from "./affordability-summary";
 import { tryDeterministicLedgerAnswer } from "./deterministic-ledger";
+import {
+  isLedgerLookupQuestion,
+  shouldPreferDocumentRag,
+} from "./document-rag-query";
 import { tryForecastTrendAnswer } from "./forecast-trend-lookup";
 import { parseScenarioMessage } from "./intent-parser";
 import { tryCategoryPaymentAnswer } from "./category-lookup";
@@ -147,6 +151,18 @@ async function getFinancialContext(): Promise<string> {
   }
 }
 
+async function tryRagDocumentAnswer(
+  message: string,
+  provider?: AiProvider,
+): Promise<string | null> {
+  const rag = await loadDocumentRagService();
+  const ragAnswer = await rag.ask(message, { topK: 5, provider });
+  if (ragAnswer.answer.toLowerCase().includes("not found")) {
+    return null;
+  }
+  return ragAnswer.answer;
+}
+
 /**
  * Attempt RAG + DB lookup: retrieve relevant document chunks and obligation data.
  * Returns the answer if relevant info found, otherwise null.
@@ -161,22 +177,36 @@ async function tryDocumentAnswer(
       return { answer: deterministic, hasDocumentContext: true };
     }
 
+    const ragService = await loadDocumentRagService();
     const [ragResult, financialContext] = await Promise.all([
-      loadDocumentRagService().then((rag) =>
-        rag.retrieve({ query: message, topK: 5 }),
-      ),
+      ragService.retrieve({ query: message, topK: 5 }),
       getFinancialContext(),
     ]);
 
     const relevant = ragResult.chunks.filter((c) => c.score > 0.2);
+    const topChunkScore =
+      relevant.length > 0
+        ? Math.max(...relevant.map((c) => c.score))
+        : 0;
+
+    // Document RAG runs even when ledger data exists (policy text, coverage, etc.)
+    if (
+      relevant.length > 0 &&
+      shouldPreferDocumentRag(message, topChunkScore)
+    ) {
+      const ragAnswer = await tryRagDocumentAnswer(message, provider);
+      if (ragAnswer) {
+        return { answer: ragAnswer, hasDocumentContext: true };
+      }
+    }
 
     if (relevant.length === 0 && !financialContext) return null;
 
-    // If we have financial data from DB, build context and ask the selected LLM
-    if (financialContext) {
-      const docContext = relevant.length > 0
-        ? relevant.map((c, i) => `[Doc ${i + 1}]\n${c.content}`).join("\n\n")
-        : "";
+    if (financialContext && isLedgerLookupQuestion(message)) {
+      const docContext =
+        relevant.length > 0
+          ? relevant.map((c, i) => `[Doc ${i + 1}]\n${c.content}`).join("\n\n")
+          : "";
 
       try {
         const { text } = await llmComplete({
@@ -188,7 +218,7 @@ async function tryDocumentAnswer(
 
 SCOPE (strict):
 - Only answer direct ledger lookups: totals, category payments, or month breakdowns for income/expenses/investments already recorded.
-- If the question is about affordability, what-if, increasing contributions, or simulating a new payment/investment, reply with exactly: NOT_A_LEDGER_LOOKUP
+- If the question is about document policy text, coverage terms, or affordability/what-if, reply with exactly: NOT_A_LEDGER_LOOKUP
 
 DATE FILTERING (strict):
 - An event is active in month YYYY-MM ONLY if start_date <= last day of that month AND (end_date is null OR end_date >= first day of that month)
@@ -214,6 +244,12 @@ OUTPUT FORMAT:
 
         const trimmed = text.trim();
         if (/NOT_A_LEDGER/i.test(trimmed)) {
+          if (relevant.length > 0) {
+            const ragAnswer = await tryRagDocumentAnswer(message, provider);
+            if (ragAnswer) {
+              return { answer: ragAnswer, hasDocumentContext: true };
+            }
+          }
           return null;
         }
         return { answer: trimmed || "Not found.", hasDocumentContext: true };
@@ -235,18 +271,14 @@ OUTPUT FORMAT:
       }
     }
 
-    // Only document chunks, no DB obligations
-    const rag = await loadDocumentRagService();
-    const ragAnswer = await rag.ask(message, {
-      topK: 5,
-      provider,
-    });
-
-    if (ragAnswer.answer.toLowerCase().includes("not found")) {
-      return null;
+    if (relevant.length > 0) {
+      const ragAnswer = await tryRagDocumentAnswer(message, provider);
+      if (ragAnswer) {
+        return { answer: ragAnswer, hasDocumentContext: true };
+      }
     }
 
-    return { answer: ragAnswer.answer, hasDocumentContext: true };
+    return null;
   } catch {
     return null;
   }

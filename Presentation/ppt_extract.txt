@@ -1,0 +1,341 @@
+﻿=== SLIDE 1 ===
+Household Finance Intelligence
+https://household-financial-web.vercel.app/
+MAKE YOUR FINANCE CONTROLABLE AND PREDICTABLE
+Chris Dang
+2026/06/29
+
+=== SLIDE 2 ===
+Why Household Finance Intelligence matters
+01
+02
+03
+04
+Our money is everywhere
+Bills, pay stubs, bank apps, and spreadsheets donÔÇÖt talk to each other. There is no
+single place
+to see income, expenses, and obligations
+Simple questions are hard to answer
+Can my family afford a $20K travel to China in July?
+How much contributions have been made into RESP, TFSA, RRSP?
+Do I have enough cash for 2
+nd
+installment of property tax in June?
+Documents donÔÇÖt become usable data
+PDFs and statements sit in email/letter, insurance, car lease, tax notices ÔÇö and you still dig them out manually
+We need answers on the go
+How can we know our disposable assets without counting all kinds of accounts in different banks? How can we our investments performance in one shot?
+Couples / households
+Self- employment
+Households struggle to turn scattered documents and transactions into trustworthy answers about cash flow, obligations.
+Generic AI chatbots are unsafe for money because they hallucinate numbers.
+Household Financial Intelligence solves this with a canonical ledger, deterministic forecasting, human-reviewed document ingestion, and AI limited to explanation ÔÇö delivered via web UI and Telegram.
+
+=== SLIDE 3 ===
+Solution
+01
+03
+One financial truth in Postgres
+Manual entry ÔåÆ
+FinancialEvent
+(ledger)
+Upload PDFs ÔåÆ extract
+FinancialObligation
+ÔåÆ confirm ÔåÆ
+FinancialEvent
+Forecast & Q&A read the same ledger ÔÇö no duplicate spreadsheets
+Centralize data in PostgreSQL
+02
+Plaid Direct API
+for linked bank accounts
+Sync balances ÔåÆ
+current_cash
+(checking) + balance history
+Ledger + Plaid ÔåÆ
+6ÔÇæmonth forecast
+and
+disposable assets
+Scenario Chat:
+engines compute;
+AI explains
+in plain language
+Live balances with Plaid + AI Q&A
+04
+Prod
+: Telegram ÔåÆ
+n8n on Railway
+ÔåÆ
+Vercel
+API
+ÔåÆ Telegram
+Dev:
+swap Railway for
+ngrok
+ÔåÆ local n8n
+n8n: bot webhook + workflows (Q&A, ledger, monthly Plaid sync)
+Vercel
+: secured routes (AUTOMATION_WEBHOOK_TOKEN) ÔÇö same logic as┬á/simulation┬áand┬á/ledger
+Telegram on the go
+Upload once, use two ways
+RAG
+(Postgres + embeddings) ÔåÆ AI retrieves contract/tax bill text at question time
+Obsidian wiki
+ÔåÆ human-readable notes & links for you
+Files in
+Blob/local storage
+; structured amounts still land in the
+ledger
+Documents: RAG + Obsidian
+
+=== SLIDE 4 ===
+How it works
+Upload             PostgreSQL
+Type                    ( ledger
+link bank           + history)
+Engines (forecast, lookup, Plaid)
+AI (explain + RAG) ÔÇö never invents totals
+Household Finance Intelligence
+Documents
+Live money
+Ask questions
+Dev in Cursor
+Deploy to
+Github
+Vercel
+connects to
+Github
+PDF upload ÔåÆ
+extract text ÔåÆ
+preview obligationsÔåÆ
+user confirm ÔåÆ
+FinancialEvent
+in ledgerÔåÆ
+copy also ÔåÆ RAG chunks + Obsidian wiki
+Plaid Link ÔåÆ
+sync balances ÔåÆ
+checking ÔåÆ
+current_cash
+ÔåÆ opening balance
+all accounts ÔåÆ
+balance history + disposable view
+Scenario Chat / Telegram
+ÔåÆ
+route: ledger lookup | forecast what-if | RAG document
+ÔåÆ
+answer with numbers + short explanation
+
+=== SLIDE 5 ===
+Tech Stack--development tools
+ESlint
+CI / CD
+Jira
+Kanban
+Blob
+Project management
+Project integration
+Storage management
+Code quality
+
+=== SLIDE 6 ===
+Tech Stack--frontend
+TypeScript (language ÔÇö types everywhere)
+Ôöé
+Ôö£ÔöÇÔöÇ .
+ts
+ÔåÆ logic, services, API routes (no JSX)
+ÔööÔöÇÔöÇ .
+tsx
+ÔåÆ React components + JSX (pages, UI)
+Ôöé
+Ôö£ÔöÇÔöÇ React        ÔåÆ UI library (components, state)
+Ôö£ÔöÇÔöÇ Tailwind CSS ÔåÆ styling (utility classes)
+ÔööÔöÇÔöÇ
+shadcn
+/
+ui
+ÔåÆ pre-built
+React+Tailwind
+components
+Ôöé
+Ôû╝
+Next.js  ÔåÆ routing, API routes, build, SSR
+Ôöé
+Ôû╝
+Node.js  ÔåÆ runs dev server, CI build,
+Vercel
+server
+Ôöé
+Ôû╝
+Browser  ÔåÆ user sees the UI (React in browser)
+
+=== SLIDE 7 ===
+Tech Stack --backend
+Prisma
+Run SQL in JS
+Docker
+Progres
+Run on local
+Neon
+Run on cloud
+Vercel
+DBeaver
+Prosgres
+Database
+Next.js
+App
+
+=== SLIDE 8 ===
+Tech Stack --automation
+Telegram
+ngrok
+Docker (n8n :5678)
+Vercel
+API
+(ledger, Plaid, forecast)
+public HTTPS URL
+
+=== SLIDE 9 ===
+Tech Stack ÔÇôAI pipeline
+Documents (RAG +
+pgvector
++ LLM)
+[Upload PDF/image]
+[Extract text]
+[
+chunkText
+ÔÇö 1000 chars, 200 overlap]
+[Embedding model ÔÇö 384 dims]                             [User question]
+[(Postgres +
+pgvector
+)                                              [Embed question]
+[Similarity search in
+pgvector
+]             [Top 5 chunks]             [LLM ÔÇö Claude/Gemini]                [Answer from sources]
+Voice (
+Openai
+whisper)
+Mic              audio                 /
+api
+/
+stt
+/transcribe              OpenAI Whisper               text                scenario chat
+
+=== SLIDE 10 ===
+When simple ledger lookup isnÔÇÖt enough:
+Router
+classifies intent
+Specialists:
+cost, investment, payments
+Composer
+merges deterministic outputs
+Writer
+narrates ÔÇö numbers unchanged
+Tech Stack --Multi-Agent(
+Langgraph+Railway
+)
+User
+Vercel
+(Next.js)
+POST /orchestrate
+Railway (
+LangGraph
+Python)
+read-only HTTP back to
+Vercel
+APIs
+Vercel
+(/
+api
+/financial-state/snapshot, ledger, Plaid, ÔÇª)
+
+=== SLIDE 11 ===
+User Plaid         Link (UI SDK)
+Next.js API (link-token, exchange, balances)
+Plaid REST API (sandbox.plaid.com)
+Neon Postgres
+/balances UI +
+LangGraph
+investment agent + n8n tools
+Tech Stack ÔÇôRESP API (Plaid)
+Live bank balances from linked accounts
+Complete disposable-assets picture
+AI answers grounded in actual liquid cash
+Historical balance trends over time
+
+=== SLIDE 12 ===
+Evals
+26 units test cases automated, in CI
+GitHub Actions runs
+npm
+test┬áon every PR/push to┬ámain
+Vitest
+Unit evals
+N8N Telegram automation evals
+Manual evals
+Human smoke tests
+Catches integration gaps
+Vitest
+and N8N miss
+exercise the live app the way a user would
+N8NÔÇÖs built-in
+Evaluations
+runs a CSV dataset n8n evals through Telegram AI workflow and scores each reply
+
+=== SLIDE 13 ===
+Challenges
+Learning
+01
+How to run and deploy a production app in the cloud
+02
+How to integrate multiple services (
+Vercel
+, Neon, Railway, Plaid, n8n)
+03
+How to evaluate AI behavior with
+Vitest
+, n8n evals, and manual tests
+01
+Understand the full stack
+ÔÇö frontend to backend, local to cloud
+02
+Keep the Telegram agent working in both n8n Cloud and local Docker
+03
+Hybrid AI routing between
+LangGraph
+, deterministic code, and LLM
+
+=== SLIDE 14 ===
+Impact
+Reflect
+02
+01
+One place for household money
+ledger, bank balances, documents, and forecasts
+Trustworthy AI answers
+routing to deterministic code and live Plaid data
+03
+Access anywhere
+From web UI, voice, and Telegram bot
+04
+Repeatable quality
+Vitest
++ n8n evals + CI
+02
+01
+Communicate clearly with AI
+explain intent fully, ask it to retell the plan
+Start simple,
+integrate deliberately
+local first, then cloud, Plaid,
+LangGraph
+, and n8
+03
+Ship, test, iterate
+Vitest
+, n8n evals, and manual test are important
+04
+Treat AI like a teammate
+state what you want clearly, have it summarize back
+
+=== SLIDE 15 ===
+
