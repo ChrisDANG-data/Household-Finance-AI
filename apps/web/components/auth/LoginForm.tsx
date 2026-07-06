@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,75 @@ import { cn } from "@/lib/utils";
 type AuthMode = "signin" | "register";
 
 type AuthUser = { id: string; username: string };
+
+function PasswordInput({
+  id,
+  label,
+  value,
+  onChange,
+  autoComplete,
+  showPassword,
+  onToggleShow,
+  isHero,
+  disabled,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete: string;
+  showPassword: boolean;
+  onToggleShow: () => void;
+  isHero: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className={cn(
+          "mb-1.5 block text-sm font-medium",
+          isHero ? "text-white/90" : "text-foreground",
+        )}
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          name={id}
+          type={showPassword ? "text" : "password"}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full rounded-lg border border-input bg-background py-2 pr-11 pl-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          required
+          minLength={8}
+          disabled={disabled}
+        />
+        <button
+          type="button"
+          className={cn(
+            "absolute inset-y-0 right-0 z-10 flex w-10 items-center justify-center rounded-r-lg transition-colors",
+            isHero
+              ? "text-emerald-800/60 hover:bg-emerald-500/10 hover:text-emerald-900"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+          onClick={onToggleShow}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-pressed={showPassword}
+          disabled={disabled}
+        >
+          {showPassword ? (
+            <EyeOff className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+          ) : (
+            <Eye className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 type LoginFormProps = {
   className?: string;
@@ -31,9 +101,11 @@ export function LoginForm({
   const [mode, setMode] = useState<AuthMode>(defaultMode);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   function goHome() {
     router.replace("/");
@@ -45,6 +117,12 @@ export function LoginForm({
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
+
+    if (mode === "register" && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
 
     const endpoint = mode === "register" ? "/api/auth/register" : "/api/auth/login";
     const submittedUsername = username.trim();
@@ -116,6 +194,7 @@ export function LoginForm({
             )}
             onClick={() => {
               setMode("signin");
+              setConfirmPassword("");
               setError(null);
               setSuccessMessage(null);
             }}
@@ -137,6 +216,7 @@ export function LoginForm({
             )}
             onClick={() => {
               setMode("register");
+              setConfirmPassword("");
               setError(null);
               setSuccessMessage(null);
             }}
@@ -196,29 +276,31 @@ export function LoginForm({
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className={cn(
-                "mb-1.5 block text-sm font-medium",
-                isHero ? "text-white/90" : "text-foreground",
-              )}
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={mode === "register" ? "new-password" : "current-password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              required
-              minLength={8}
+          <PasswordInput
+            id="password"
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            autoComplete={mode === "register" ? "new-password" : "current-password"}
+            showPassword={showPassword}
+            onToggleShow={() => setShowPassword((visible) => !visible)}
+            isHero={isHero}
+            disabled={Boolean(successMessage)}
+          />
+
+          {mode === "register" ? (
+            <PasswordInput
+              id="confirmPassword"
+              label="Confirm password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              autoComplete="new-password"
+              showPassword={showPassword}
+              onToggleShow={() => setShowPassword((visible) => !visible)}
+              isHero={isHero}
               disabled={Boolean(successMessage)}
             />
-          </div>
+          ) : null}
         </div>
 
         {error ? (
