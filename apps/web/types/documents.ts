@@ -1,4 +1,5 @@
 import type { SerializedDocument } from "@/lib/serializers";
+import type { FinancialEventOwner } from "@/services/financial-state/types";
 
 export type DocumentMimeType =
   | "application/pdf"
@@ -62,6 +63,7 @@ export interface ReviewableObligation {
   startDate: string;
   endDate?: string | null;
   notes?: string | null;
+  owner?: FinancialEventOwner;
 }
 
 export interface ExtractionPreviewResult {

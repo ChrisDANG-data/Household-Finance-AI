@@ -8,6 +8,11 @@ import { Input } from "@/components/ui/input";
 import type { AiProvider } from "@/lib/ai-provider";
 import { confirmDocumentExtraction } from "@/lib/api/client";
 import type { ReviewableObligation } from "@/types/documents";
+import {
+  FINANCIAL_EVENT_OWNERS,
+  OWNER_LABELS,
+  type FinancialEventOwner,
+} from "@/services/financial-state/types";
 
 const FREQUENCIES = [
   { value: "monthly", label: "Monthly" },
@@ -27,6 +32,7 @@ function emptyRow(): ReviewableObligation {
     startDate: new Date().toISOString().slice(0, 10),
     endDate: null,
     notes: null,
+    owner: "partner_a",
   };
 }
 
@@ -60,7 +66,12 @@ export function ObligationReviewDialog({
   useEffect(() => {
     if (open) {
       setRows(
-        initialObligations.length > 0 ? initialObligations : [emptyRow()],
+        initialObligations.length > 0
+          ? initialObligations.map((row) => ({
+              ...row,
+              owner: row.owner ?? "partner_a",
+            }))
+          : [emptyRow()],
       );
       setError(null);
     }
@@ -167,12 +178,13 @@ export function ObligationReviewDialog({
                 </p>
               ) : null}
               <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full min-w-[720px] text-sm">
+                <table className="w-full min-w-[860px] text-sm">
                   <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <tr>
                       <th className="px-2 py-2">Name</th>
                       <th className="px-2 py-2">Category</th>
                       <th className="px-2 py-2">Amount</th>
+                      <th className="px-2 py-2">Owner</th>
                       <th className="px-2 py-2">Freq</th>
                       <th className="px-2 py-2">Start date</th>
                       <th className="px-2 py-2">End date</th>
@@ -215,6 +227,23 @@ export function ObligationReviewDialog({
                             }
                             className="h-8 w-24 text-xs"
                           />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <select
+                            value={row.owner ?? "partner_a"}
+                            onChange={(e) =>
+                              updateRow(index, {
+                                owner: e.target.value as FinancialEventOwner,
+                              })
+                            }
+                            className="h-8 w-full min-w-[7rem] rounded-md border border-input bg-background px-2 text-xs"
+                          >
+                            {FINANCIAL_EVENT_OWNERS.map((owner) => (
+                              <option key={owner} value={owner}>
+                                {OWNER_LABELS[owner]}
+                              </option>
+                            ))}
+                          </select>
                         </td>
                         <td className="px-2 py-1.5">
                           <select

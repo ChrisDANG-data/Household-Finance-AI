@@ -44,6 +44,7 @@ function toReviewable(ob: ExtractedObligation): ReviewableObligation {
     startDate: ob.startDate,
     endDate: ob.endDate,
     notes: ob.notes,
+    owner: ob.owner ?? "partner_a",
   };
 }
 

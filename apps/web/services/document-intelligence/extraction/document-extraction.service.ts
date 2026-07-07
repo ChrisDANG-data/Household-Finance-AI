@@ -6,6 +6,10 @@ import type { AiProvider } from "@/services/ai/llm/types";
 import { validateFinancialAmount } from "@/services/financial-state/amount-validation";
 import { AppError } from "@/utils/errors";
 import { financialStatePersistence } from "@/services/financial-state/financial-state.persistence";
+import {
+  FINANCIAL_EVENT_OWNERS,
+  type FinancialEventOwner,
+} from "@/services/financial-state/types";
 
 import {
   inferExpectedInstallmentCount,
@@ -22,6 +26,19 @@ export interface ExtractedObligation {
   startDate: string;
   endDate?: string | null;
   notes?: string | null;
+  owner?: FinancialEventOwner | string;
+}
+
+function parseOwner(raw: unknown): FinancialEventOwner {
+  if (typeof raw === "string") {
+    const v = raw.trim().toLowerCase().replace(/\s+/g, "_");
+    if (FINANCIAL_EVENT_OWNERS.includes(v as FinancialEventOwner)) {
+      return v as FinancialEventOwner;
+    }
+    if (v === "partnera" || v === "a") return "partner_a";
+    if (v === "partnerb" || v === "b") return "partner_b";
+  }
+  return "partner_a";
 }
 
 export interface ExtractedDocumentPayload {
@@ -77,6 +94,7 @@ function normalizeObligation(raw: ExtractedObligation): ExtractedObligation {
     startDate: String(raw.startDate || new Date().toISOString().slice(0, 10)),
     endDate: raw.endDate ? String(raw.endDate) : null,
     notes: raw.notes ? String(raw.notes) : null,
+    owner: parseOwner(raw.owner),
   };
 }
 
@@ -222,7 +240,7 @@ export class DocumentExtractionService {
         frequency: eventFrequency,
         start_date: ob.startDate,
         end_date: ob.endDate || null,
-        owner: "partner_a",
+        owner: ob.owner ?? "partner_a",
         confidence: 0.9,
         source_document_id: documentId,
         metadata: {
