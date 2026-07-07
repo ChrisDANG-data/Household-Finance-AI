@@ -1,39 +1,155 @@
 # Household Financial Intelligence
 
-Production-ready **Next.js (App Router)** scaffold for an AI-powered household financial intelligence system. Organized as **four engines** with AI limited to explanation only. Architecture and placeholders only — **no business features** are implemented yet.
+> **Deterministic household finance + AI explanation.** Upload bills, sync bank balances, run cash-flow forecasts, and ask natural-language questions — the LLM routes and narrates; it never owns the ledger or the math.
 
-## Documentation
+[![CI](https://github.com/ChrisDANG-data/household_financial/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisDANG-data/household_financial/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/demo-Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://household-financial-web.vercel.app)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-PostgreSQL-2D3748?style=flat&logo=prisma)](https://www.prisma.io/)
 
-| Document | Description |
-|----------|-------------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, data flow, folder conventions, extension points |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | What each npm package is for and what to add later |
-| [apps/web/.env.example](apps/web/.env.example) | Environment variables with required/optional/future labels |
+**Live app:** https://household-financial-web.vercel.app
+
+<!-- Add screenshots for maximum recruiter impact:
+     docs/images/home.png, ledger.png, documents-review.png, scenario-chat.png -->
+<!-- ![Home](docs/images/home.png) -->
+
+---
+
+## Why this project
+
+Household money lives in spreadsheets, bank apps, and PDF folders. Generic chatbots guess at totals. This app centralizes **one financial truth** in PostgreSQL and uses AI only where it adds value — document retrieval, routing, and explanation — while **forecasts, ledger totals, and affordability checks stay deterministic**.
+
+**Core design rule:** *AI never calculates money.*
+
+| Question | How it's answered |
+|----------|-------------------|
+| "What did we spend on insurance in May?" | Deterministic ledger lookup |
+| "Can we afford a $20K trip in July?" | Forecast engine + advisor narration |
+| "What's in our house insurance policy?" | Document RAG over uploaded PDFs |
+| "What's Partner B's monthly income?" | Owner-scoped ledger query |
+
+---
+
+## Highlights
+
+- **Four-engine architecture** — Document Intelligence, Financial State (ledger), Forecast Simulation, AI Explanation — with strict dependency boundaries ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md))
+- **Hybrid scenario chat** — TypeScript fast-path for simple queries; **LangGraph** multi-agent orchestration for complex what-if questions ([services/langgraph-orchestrator](services/langgraph-orchestrator))
+- **Document pipeline** — PDF/image upload → OCR/extraction → human review → canonical `FinancialEvent` → embeddings for RAG
+- **Plaid integration** — Link accounts, sync balances, encrypted token storage, disposable-assets view
+- **Production hardening** — Per-user auth, session cookies, AES-256-GCM for Plaid tokens, fail-closed automation webhooks ([docs/PRIVACY.md](docs/PRIVACY.md))
+- **Automation** — n8n + Telegram workflows calling the same secured APIs as the web UI ([docs/INTEGRATIONS.md](docs/INTEGRATIONS.md))
+- **125 unit tests** across 28 Vitest suites — simulation, dedupe, RAG routing, Plaid, auth, automation
+
+---
+
+## What I built
+
+*Final project — 2026 Inference AI Course. Replace bullets with your personal contributions if collaborating.*
+
+- Designed the **canonical `FinancialEvent` model** and deterministic projection engine (`projection.ts`, `simulation.ts`) — forecasts are computed in code, not by an LLM
+- Implemented **hybrid scenario-chat routing**: ledger lookup → LangGraph specialists → document RAG → forecast + advisor
+- Built the **document intelligence vertical slice**: upload, extraction, obligation review UI, confirm-to-ledger, and Postgres-backed embeddings
+- Added **Tier-1 privacy controls**: household login, scrypt password hashes, encrypted Plaid tokens, Bearer-protected automation routes
+- Deployed **Next.js on Vercel**, **Neon Postgres**, and **LangGraph on Railway** with CI gates on every PR
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph ingest [Ingest]
+    Docs[Documents / OCR]
+    Manual[Ledger UI]
+    Plaid[Plaid sync]
+  end
+
+  subgraph truth [Canonical truth]
+    FS[(PostgreSQL\nFinancialEvent ledger)]
+  end
+
+  subgraph compute [Deterministic]
+    Forecast[Forecast engine]
+    Lookup[Ledger lookups]
+  end
+
+  subgraph ai [AI layer — read only]
+    RAG[Document RAG]
+    Chat[Scenario chat]
+    LG[LangGraph orchestrator]
+  end
+
+  Docs --> FS
+  Manual --> FS
+  Plaid --> FS
+  FS --> Forecast
+  FS --> Lookup
+  FS --> RAG
+  Lookup --> Chat
+  RAG --> Chat
+  Forecast --> Chat
+  Chat --> LG
+```
+
+**Dependency rule:** Document Intelligence ingests into Financial State. Forecast Simulation reads snapshots. AI Explanation and scenario chat receive **read-only context** — no direct DB writes, no invented balances.
+
+Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+---
+
+## Feature tour
+
+| Module | URL | What it does |
+|--------|-----|--------------|
+| **Documents** | `/documents` | Upload PDFs/images; AI extracts payment schedules; review & confirm to ledger |
+| **Ledger** | `/ledger` | Canonical income, expenses, investments — Partner A / B / Joint |
+| **Balances** | `/balances` | Plaid-linked accounts, balance history, disposable assets |
+| **Forecast** | `/simulation` | 6-month cash-flow charts, what-if scenarios |
+| **Scenario chat** | `/scenario` | Natural-language Q&A — engines compute, AI explains |
+| **Auth** | `/login` | Per-user sessions; data isolated by `userId` |
+
+### 60-second demo path
+
+1. Open the [live app](https://household-financial-web.vercel.app) → **Create account**
+2. **Ledger** → add a monthly expense (set Owner: Partner A or B)
+3. **Documents** → upload a bill → **Review payments** → set Owner → **Confirm & add to ledger**
+4. **Forecast** → view 6-month projection
+5. **Scenario chat** → ask *"Can we afford $5,000 travel in August?"*
+
+---
 
 ## Tech stack
 
-- **Next.js** 16 (App Router) + **TypeScript**
-- **Tailwind CSS** v4 + **shadcn/ui**
-- **Prisma ORM** 6 + **PostgreSQL**
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui |
+| **Backend** | Next.js API routes, TypeScript services layer |
+| **Database** | PostgreSQL (Neon), Prisma ORM 6 |
+| **AI** | Anthropic Claude, OpenAI (embeddings/STT), structured output validation |
+| **Orchestration** | LangGraph (Python FastAPI) on Railway |
+| **Banking** | Plaid Direct API (encrypted tokens at rest) |
+| **Documents** | MuPDF, Tesseract OCR, local + OpenAI embeddings |
+| **Automation** | n8n, Telegram webhooks |
+| **Deploy** | Vercel (web), Neon (DB), Railway (LangGraph) |
+| **CI** | GitHub Actions — lint, 125 tests, production build |
 
-## Setup & development
+---
+
+## Quick start
 
 ### Prerequisites
 
 | Tool | Version |
 |------|---------|
-| Node.js | **20.19+** recommended (20.18+ works with Prisma 6) |
-| npm | 9+ (comes with Node) |
-| PostgreSQL | 14+ (local, Docker, or cloud) |
-
-Optional: [Docker](https://docs.docker.com/get-docker/) for a local Postgres container.
+| Node.js | 20.19+ recommended |
+| PostgreSQL | 14+ (local, Docker, or Neon) |
 
 ### 1. Clone and install
 
 ```bash
-cd /path/to/Final_Project_AI
-
-# Install all workspace dependencies (root + apps/web)
+git clone https://github.com/ChrisDANG-data/household_financial.git
+cd household_financial
 npm install
 ```
 
@@ -41,167 +157,137 @@ npm install
 
 ```bash
 cp apps/web/.env.example apps/web/.env
+# Set DATABASE_URL at minimum. See .env.example for AI, Plaid, auth, and LangGraph vars.
 ```
 
-Edit `apps/web/.env` and set at minimum:
-
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/household_finance?schema=public"
-```
-
-See [apps/web/.env.example](apps/web/.env.example) for every variable, including AI, OCR, vector store, and TTS placeholders.
-
-### 3. Start PostgreSQL
-
-**Option A — Docker**
+### 3. Database
 
 ```bash
-docker run --name hfi-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=household_finance \
-  -p 5432:5432 \
-  -d postgres:16
-```
+# Option A: Docker Postgres (repo root)
+docker compose up -d
 
-Then in `.env`:
+# Option B: use Neon or local Postgres — set DATABASE_URL in apps/web/.env
 
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/household_finance?schema=public"
-```
-
-**Option B — Local PostgreSQL**
-
-Create a database and user, then set `DATABASE_URL` to match your instance.
-
-### 4. Initialize the database
-
-The schema has no models yet (scaffold only). Push the datasource so Prisma can connect:
-
-```bash
 cd apps/web
 npx prisma db push
 ```
 
-When you add models to `prisma/schema.prisma`:
+### 4. Run
 
 ```bash
-npm run db:migrate
-```
-
-### 5. Generate Prisma client
-
-```bash
-cd apps/web
-npx prisma generate
-```
-
-This also runs automatically on `npm install` (`postinstall`) and `npm run build`.
-
-### 6. Run the dev server
-
-From repository root:
-
-```bash
+# From repo root
 npm run dev
 ```
 
-Or from `apps/web`:
-
-```bash
-npm run dev
-```
+Open http://localhost:3000
 
 | URL | Purpose |
 |-----|---------|
-| http://localhost:3000 | Bootstrap landing page (layer overview) |
-| http://localhost:3000/scenario | Scenario Chat UI (streaming advisor + dashboard) |
+| http://localhost:3000 | Home — Documents, Ledger, Balances, Forecast |
+| http://localhost:3000/scenario | Scenario chat |
 | http://localhost:3000/api/health | Health check (`database: true` when Postgres is reachable) |
 
-### 7. Run financial simulation tests
+### 5. Tests (same as CI)
 
 ```bash
-cd apps/web
 npm test
+npm run build
 ```
 
-Deterministic harness: `services/financial-state/__tests__/simulation.test.ts`
-
-### 8. Verify production build (optional)
+### Optional: LangGraph orchestrator
 
 ```bash
-npm run build
-npm run start
+cd services/langgraph-orchestrator
+python -m venv .venv
+. .venv/Scripts/activate   # Windows
+pip install -r requirements.txt
+set APP_WEB_BASE_URL=http://localhost:3000
+uvicorn app.main:app --host 0.0.0.0 --port 8081
 ```
 
-### Troubleshooting
+Set `LANGGRAPH_ENABLED=true` and `LANGGRAPH_URL=http://localhost:8081` in `apps/web/.env`. See [services/langgraph-orchestrator/README.md](services/langgraph-orchestrator/README.md).
 
-| Issue | Fix |
-|-------|-----|
-| `Missing required environment variable: DATABASE_URL` | Create `apps/web/.env` from `.env.example` |
-| Health shows `database: false` | Start Postgres; confirm `DATABASE_URL`; run `npx prisma db push` |
-| Prisma install fails on Node 20.18 | Project uses Prisma 6; or upgrade Node to 20.19+ |
-| Port 3000 in use | `npm run dev -- --port 3001` |
+---
 
 ## Project structure
 
 ```
-apps/web/
-├── app/api/
-│   ├── documents/           # Document Intelligence Engine
-│   ├── financial-state/     # Financial State Engine
-│   ├── simulation/          # Forecast Simulation Engine
-│   └── explain/             # AI Explanation Layer
-├── services/
-│   ├── document-intelligence/
-│   ├── financial-state/
-│   ├── forecast-simulation/
-│   └── ai-explanation/
-├── types/                   # Per-engine contracts
-├── prompts/
-│   ├── document-intelligence/
-│   └── explanation/
-└── ...
+├── apps/web/                    # Next.js app (UI + API)
+│   ├── app/                     # App Router pages & API routes
+│   ├── components/              # UI (documents, ledger, simulation, auth)
+│   ├── services/                # Business logic (four engines + integrations)
+│   ├── prisma/schema.prisma     # User, Document, FinancialEvent, Plaid, RAG chunks
+│   └── __tests__/               # Vitest unit tests (28 suites)
+├── services/langgraph-orchestrator/   # Python LangGraph multi-agent service
+├── docs/                        # Architecture, privacy, integrations, CI
+├── Presentation/                # Slide copy & Q&A for demos
+└── .github/workflows/ci.yml     # Lint + test + build on every PR
 ```
 
-Four-engine design (AI does not compute or store): [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+### Data model (Postgres)
 
-## API routes (placeholders)
+| Model | Role |
+|-------|------|
+| `User` | Household login; scopes all data by `userId` |
+| `FinancialEvent` | Canonical ledger — forecasts and chat read this |
+| `FinancialObligation` | Extracted from documents; human confirms → creates events |
+| `Document` + `DocumentChunk` | Uploaded files + embeddings for RAG |
+| `PlaidItem` + `PlaidBalanceHistory` | Linked accounts and sync history |
 
-Non-health routes return **501 Not Implemented** until features are built.
+`FinancialState.computed` and timeline projections are **derived at read time**, never stored.
 
-| Method | Path | Engine |
-|--------|------|--------|
-| `GET` | `/api/health` | Financial State |
-| `POST` | `/api/documents/upload` | Document Intelligence |
-| `GET` | `/api/documents/upload/[documentId]` | Document Intelligence |
-| `POST` | `/api/documents/extraction` | Document Intelligence |
-| `POST` | `/api/documents/embeddings` | Document Intelligence |
-| `POST` | `/api/documents/rag` | Document Intelligence |
-| `POST` | `/api/financial-state/snapshot` | Financial State (deterministic engine) |
-| `POST` | `/api/financial-state/events` | Financial State (DB ingest, future) |
-| `GET` | `/api/financial-state/ledger` | Financial State |
-| `POST` | `/api/simulation/forecast` | Forecast Simulation |
-| `POST` | `/api/simulation/scenarios` | Forecast Simulation |
-| `GET` | `/api/simulation/scenarios/[scenarioId]` | Forecast Simulation |
-| `POST` | `/api/explain` | AI Explanation |
-| `POST` | `/api/explain/narration` | AI Explanation |
-| `POST` | `/api/scenario-chat` | Scenario Chat (NL orchestration) |
+---
 
-## Database commands
+## Documentation
 
-Run from `apps/web` or via root workspace scripts:
+| Document | Description |
+|----------|-------------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Four engines, AI boundaries, data flow |
+| [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) | Plaid, LangGraph, n8n/Telegram, Vercel deploy |
+| [docs/PRIVACY.md](docs/PRIVACY.md) | Data handling, encryption, access control |
+| [docs/CI.md](docs/CI.md) | GitHub Actions workflow |
+| [apps/web/.env.example](apps/web/.env.example) | All environment variables |
+| [Presentation/PRESENTATION_QA.md](Presentation/PRESENTATION_QA.md) | 30 Q&A for architecture deep-dives |
+| [services/langgraph-orchestrator/RAILWAY.md](services/langgraph-orchestrator/RAILWAY.md) | LangGraph production deploy |
 
-```bash
-npm run db:generate   # Regenerate Prisma Client
-npm run db:migrate    # Create & apply migrations (after models exist)
-npm run db:push       # Push schema to DB without migration files
-npm run db:studio     # Open Prisma Studio GUI
+---
+
+## Deployment
+
+| Service | Platform | Notes |
+|---------|----------|-------|
+| Web app | **Vercel** | Root directory: `apps/web` |
+| Database | **Neon** | `DATABASE_URL` in Vercel env |
+| LangGraph | **Railway** | `LANGGRAPH_URL` in Vercel env |
+
+**Required Vercel env vars for production auth:**
+
+```env
+AUTH_SECRET=<random 32+ characters>
+TOKEN_ENCRYPTION_KEY=<32-byte key>
+AUTOMATION_WEBHOOK_TOKEN=<random token>
+AUTH_ALLOW_REGISTRATION=true
 ```
 
-## Next steps
+Full checklist: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) (Vercel env vars section)
 
-1. Add Prisma models (`Document`, `Conversation`, etc.) — see comments in `prisma/schema.prisma`.
-2. Implement one vertical slice (e.g. upload → storage → DB row).
-3. Wire env vars in `lib/env.ts` as each provider is added.
-4. Add npm SDKs listed in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) only when needed.
+---
+
+## Screenshots
+
+Add 2–4 PNGs under `docs/images/` and uncomment the hero image above:
+
+| File | Suggested capture |
+|------|-------------------|
+| `docs/images/home.png` | Landing page with feature cards |
+| `docs/images/ledger.png` | Recorded events with Partner A/B badges |
+| `docs/images/documents-review.png` | Review payments dialog with Owner column |
+| `docs/images/scenario-chat.png` | Forecast + natural-language Q&A |
+
+See [docs/images/README.md](docs/images/README.md).
+
+---
+
+## License
+
+Course final project. Add an MIT license if you open-source for portfolio use.
