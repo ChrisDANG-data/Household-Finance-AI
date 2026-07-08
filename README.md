@@ -2,7 +2,7 @@
 
 > **Deterministic household finance + AI explanation.** Upload bills, sync bank balances, run cash-flow forecasts, and ask natural-language questions — the LLM routes and narrates; it never owns the ledger or the math.
 
-[![CI](https://github.com/ChrisDANG-data/household_financial/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisDANG-data/household_financial/actions/workflows/ci.yml)
+[![CI](https://github.com/ChrisDANG-data/Household-Finance-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisDANG-data/Household-Finance-AI/actions/workflows/ci.yml)
 [![Live demo](https://img.shields.io/badge/demo-Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://household-financial-web.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -51,7 +51,6 @@ Household money lives in spreadsheets, bank apps, and PDF folders. Generic chatb
 
 ## What I built
 
-*Final project — 2026 Inference AI Course. Replace bullets with your personal contributions if collaborating.*
 
 - Designed the **canonical `FinancialEvent` model** and deterministic projection engine (`projection.ts`, `simulation.ts`) — forecasts are computed in code, not by an LLM
 - Implemented **hybrid scenario-chat routing**: ledger lookup → LangGraph specialists → document RAG → forecast + advisor
@@ -119,9 +118,13 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 |:------:|:---------:|
 | ![Ledger](docs/images/ledger.png) | ![Documents](docs/images/documents-review.png) |
 
-| Forecast + Ask AI | n8n / Telegram automation |
-|:-----------------:|:-------------------------:|
-| ![Scenario chat](docs/images/scenario-chat.png) | ![n8n](docs/images/n8n.png) |
+**Forecast + Ask AI**
+
+![Scenario chat](docs/images/scenario-chat.png)
+
+**n8n / Telegram automation**
+
+![n8n](docs/images/n8n.png)
 
 ### 60-second demo path
 
@@ -150,79 +153,6 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ---
 
-## Quick start
-
-### Prerequisites
-
-| Tool | Version |
-|------|---------|
-| Node.js | 20.19+ recommended |
-| PostgreSQL | 14+ (local, Docker, or Neon) |
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/ChrisDANG-data/household_financial.git
-cd household_financial
-npm install
-```
-
-### 2. Configure environment
-
-```bash
-cp apps/web/.env.example apps/web/.env
-# Set DATABASE_URL at minimum. See .env.example for AI, Plaid, auth, and LangGraph vars.
-```
-
-### 3. Database
-
-```bash
-# Option A: Docker Postgres (repo root)
-docker compose up -d
-
-# Option B: use Neon or local Postgres — set DATABASE_URL in apps/web/.env
-
-cd apps/web
-npx prisma db push
-```
-
-### 4. Run
-
-```bash
-# From repo root
-npm run dev
-```
-
-Open http://localhost:3000
-
-| URL | Purpose |
-|-----|---------|
-| http://localhost:3000 | Home — Documents, Ledger, Balances, Forecast |
-| http://localhost:3000/scenario | Scenario chat |
-| http://localhost:3000/api/health | Health check (`database: true` when Postgres is reachable) |
-
-### 5. Tests (same as CI)
-
-```bash
-npm test
-npm run build
-```
-
-### Optional: LangGraph orchestrator
-
-```bash
-cd services/langgraph-orchestrator
-python -m venv .venv
-. .venv/Scripts/activate   # Windows
-pip install -r requirements.txt
-set APP_WEB_BASE_URL=http://localhost:3000
-uvicorn app.main:app --host 0.0.0.0 --port 8081
-```
-
-Set `LANGGRAPH_ENABLED=true` and `LANGGRAPH_URL=http://localhost:8081` in `apps/web/.env`. See [services/langgraph-orchestrator/README.md](services/langgraph-orchestrator/README.md).
-
----
-
 ## Project structure
 
 ```
@@ -238,33 +168,6 @@ Set `LANGGRAPH_ENABLED=true` and `LANGGRAPH_URL=http://localhost:8081` in `apps/
 └── .github/workflows/ci.yml     # Lint + test + build on every PR
 ```
 
-### Data model (Postgres)
-
-| Model | Role |
-|-------|------|
-| `User` | Household login; scopes all data by `userId` |
-| `FinancialEvent` | Canonical ledger — forecasts and chat read this |
-| `FinancialObligation` | Extracted from documents; human confirms → creates events |
-| `Document` + `DocumentChunk` | Uploaded files + embeddings for RAG |
-| `PlaidItem` + `PlaidBalanceHistory` | Linked accounts and sync history |
-
-`FinancialState.computed` and timeline projections are **derived at read time**, never stored.
-
----
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Four engines, AI boundaries, data flow |
-| [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) | Plaid, LangGraph, n8n/Telegram, Vercel deploy |
-| [docs/PRIVACY.md](docs/PRIVACY.md) | Data handling, encryption, access control |
-| [docs/CI.md](docs/CI.md) | GitHub Actions workflow |
-| [apps/web/.env.example](apps/web/.env.example) | All environment variables |
-| [Presentation/PRESENTATION_QA.md](Presentation/PRESENTATION_QA.md) | 30 Q&A for architecture deep-dives |
-| [services/langgraph-orchestrator/RAILWAY.md](services/langgraph-orchestrator/RAILWAY.md) | LangGraph production deploy |
-
----
 
 ## Deployment
 
@@ -274,26 +177,6 @@ Set `LANGGRAPH_ENABLED=true` and `LANGGRAPH_URL=http://localhost:8081` in `apps/
 | Database | **Neon** | `DATABASE_URL` in Vercel env |
 | LangGraph | **Railway** | `LANGGRAPH_URL` in Vercel env |
 
-**Required Vercel env vars for production auth:**
-
-```env
-AUTH_SECRET=<random 32+ characters>
-TOKEN_ENCRYPTION_KEY=<32-byte key>
-AUTOMATION_WEBHOOK_TOKEN=<random token>
-AUTH_ALLOW_REGISTRATION=true
-```
-
-Full checklist: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) (Vercel env vars section)
-
----
-
-## Screenshots
-
-Screenshots live in [`docs/images/`](docs/images/). The **hero** (home page) is at the top of this README; the gallery under **Feature tour** shows ledger, documents, forecast/Ask AI, and n8n automation.
-
-See [docs/images/README.md](docs/images/README.md) to replace or add captures.
-
----
 
 ## License
 
