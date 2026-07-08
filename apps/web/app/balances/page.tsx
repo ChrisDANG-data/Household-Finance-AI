@@ -1,5 +1,5 @@
 import { EngineModuleLayout } from "@/components/EngineModuleLayout";
-import { PlaidBalanceHistoryPanel } from "@/components/integrations/PlaidBalanceHistoryPanel";
+import { AccountBalancesPanel } from "@/components/integrations/AccountBalancesPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -8,9 +8,9 @@ export default function BalancesPage() {
     <EngineModuleLayout
       wide
       title="Account balances"
-      subtitle="Disposable assets, Plaid balance history, and end-of-month sync — separate from the 6-month forecast."
+      subtitle="Track balances with manual entry or Plaid bank sync. Disposable assets and forecast opening cash use your chosen source."
     >
-      <PlaidBalanceHistoryPanel />
+      <AccountBalancesPanel />
     </EngineModuleLayout>
   );
 }

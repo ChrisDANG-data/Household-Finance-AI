@@ -3,6 +3,7 @@ import { DEFAULT_USER_ID } from "@/services/financial-state/financial-state.pers
 
 import { tryCategoryCoverageAnswer, tryCategoryPaymentAnswer, tryLastPaymentDateAnswer } from "./category-lookup";
 import { tryDeterministicMonthAnswer } from "./monthly-lookup";
+import { tryDeterministicPeriodAnswer } from "./period-lookup";
 import { tryPartnerLedgerAnswer } from "./partner-ledger-lookup";
 import { tryPlaidBalanceAnswer } from "./plaid-balance-lookup";
 
@@ -34,6 +35,9 @@ export async function tryDeterministicLedgerAnswer(
 
   const partnerAnswer = await tryPartnerLedgerAnswer(message, userId);
   if (partnerAnswer) return partnerAnswer;
+
+  const periodAnswer = await tryDeterministicPeriodAnswer(message, options);
+  if (periodAnswer) return periodAnswer;
 
   const monthAnswer = await tryDeterministicMonthAnswer(message, options);
   if (monthAnswer) return monthAnswer;

@@ -53,11 +53,13 @@ function Row({
 
 export interface DisposableAssetsCardProps {
   refreshKey?: number;
+  balanceSource?: import("@/services/financial-state/state.types").BalanceSource;
   onSynced?: () => void;
 }
 
 export function DisposableAssetsCard({
   refreshKey = 0,
+  balanceSource = "manual",
   onSynced,
 }: DisposableAssetsCardProps) {
   const [summary, setSummary] = useState<DisposableAssetsSummary | null>(null);
@@ -107,28 +109,37 @@ export function DisposableAssetsCard({
               Disposable assets
             </CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Plaid assets plus this month&apos;s ledger income, minus expenses and
-              investments (amounts shown in CAD).
+              {balanceSource === "manual"
+                ? "Manual balances plus this month's ledger income, minus expenses and investments (amounts shown in CAD)."
+                : "Plaid assets plus this month's ledger income, minus expenses and investments (amounts shown in CAD)."}
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={syncing || loading}
-            onClick={() => void runLiveSync()}
-          >
-            <RefreshCw className={`mr-2 size-4 ${syncing ? "animate-spin" : ""}`} />
-            Sync live from Plaid
-          </Button>
+          {balanceSource === "plaid" ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={syncing || loading}
+              onClick={() => void runLiveSync()}
+            >
+              <RefreshCw className={`mr-2 size-4 ${syncing ? "animate-spin" : ""}`} />
+              Sync live from Plaid
+            </Button>
+          ) : null}
         </div>
-        <PlaidBankActions
-          refreshKey={refreshKey}
-          onLinked={() => {
-            void load();
-            onSynced?.();
-          }}
-        />
+        {balanceSource === "plaid" ? (
+          <PlaidBankActions
+            refreshKey={refreshKey}
+            onLinked={() => {
+              void load();
+              onSynced?.();
+            }}
+          />
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Using manual balances — update the form above. No Plaid connection required.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {loading && !summary && (
@@ -155,7 +166,11 @@ export function DisposableAssetsCard({
                   timeStyle: "short",
                 })}{" "}
                 · {summary.month}
-                {summary.plaid_connected ? " · live from Plaid" : " · Plaid not linked"}
+                {summary.balance_source === "manual"
+                  ? " · manual balances"
+                  : summary.plaid_connected
+                    ? " · live from Plaid"
+                    : " · Plaid not linked"}
               </p>
             </div>
 
@@ -163,8 +178,23 @@ export function DisposableAssetsCard({
               <Row label="Checking" amount={summary.checking_total} />
               <Row label="Savings" amount={summary.savings_total} />
               <Row label="Cash management" amount={summary.cash_management_total} />
-              <Row label="Investments (Plaid)" amount={summary.investment_total} />
-              <Row label="Plaid assets total" amount={summary.plaid_assets_total} strong />
+              <Row
+                label={
+                  summary.balance_source === "manual"
+                    ? "Investments (manual)"
+                    : "Investments (Plaid)"
+                }
+                amount={summary.investment_total}
+              />
+              <Row
+                label={
+                  summary.balance_source === "manual"
+                    ? "Assets total"
+                    : "Plaid assets total"
+                }
+                amount={summary.plaid_assets_total}
+                strong
+              />
               <Row label="Credit owed" amount={summary.credit_owed} negative muted />
               <Row label="Income this month" amount={summary.month_income} />
               <Row label="Expenses this month" amount={summary.month_expenses} negative />
@@ -186,6 +216,28 @@ export function DisposableAssetsCard({
                 ))}
               </div>
             )}
+
+            {summary.balance_source === "manual" &&
+              summary.account_lines.filter((line) => line.category !== "mortgage")
+                .length > 0 && (
+                <div className="space-y-2 rounded-lg border border-border/60 bg-muted/10 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Accounts in this snapshot
+                  </p>
+                  {summary.account_lines
+                    .filter((line) => line.category !== "mortgage")
+                    .map((line) => (
+                    <div key={line.account_id} className="space-y-0.5">
+                      <Row label={line.name} amount={line.balance} muted />
+                      {line.holdings_notes ? (
+                        <p className="pl-0 text-xs text-muted-foreground">
+                          Holdings: {line.holdings_notes}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
 
             {summary.notes.length > 0 && (
               <ul className="list-inside list-disc text-xs text-muted-foreground">

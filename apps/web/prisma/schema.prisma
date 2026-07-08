@@ -42,6 +42,27 @@ enum FinancialEventOwner {
   joint
 }
 
+enum BalanceSource {
+  plaid
+  manual
+}
+
+enum ManualAccountType {
+  checking
+  savings
+  cash_management
+  tfsa
+  resp
+  rdsp
+  rrsp
+  brokerage
+  wealthsimple
+  investment_other
+  credit
+  mortgage
+  other
+}
+
 /// Auth — household users (username + password hash; never store plaintext passwords)
 model User {
   id           String   @id @default(cuid())
@@ -77,13 +98,39 @@ model Document {
 /// Financial State — canonical household snapshot (scalars persisted; computed fields derived at read time)
 model FinancialState {
   userId        String   @id @map("user_id")
-  currentCash   Decimal  @map("current_cash") @db.Decimal(14, 2)
-  monthlyIncome Decimal  @default(0) @map("monthly_income") @db.Decimal(14, 2)
+  currentCash   Decimal   @map("current_cash") @db.Decimal(14, 2)
+  monthlyIncome Decimal   @default(0) @map("monthly_income") @db.Decimal(14, 2)
+  partnerAOpeningCash Decimal? @map("partner_a_opening_cash") @db.Decimal(14, 2)
+  partnerBOpeningCash Decimal? @map("partner_b_opening_cash") @db.Decimal(14, 2)
+  balanceSource   BalanceSource @default(manual) @map("balance_source")
+  manualChecking  Decimal       @default(0) @map("manual_checking") @db.Decimal(14, 2)
+  manualSavings   Decimal       @default(0) @map("manual_savings") @db.Decimal(14, 2)
+  manualCashManagement Decimal  @default(0) @map("manual_cash_management") @db.Decimal(14, 2)
+  manualInvestment Decimal      @default(0) @map("manual_investment") @db.Decimal(14, 2)
+  manualCreditOwed Decimal        @default(0) @map("manual_credit_owed") @db.Decimal(14, 2)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
   events        FinancialEvent[]
 
   @@map("financial_states")
+}
+
+/// Manual account balances — per bank/account snapshot when not using Plaid
+model ManualAccountBalance {
+  id             String            @id @default(cuid())
+  userId         String            @map("user_id")
+  snapshotDate   String            @map("snapshot_month")
+  bankName       String            @map("bank_name")
+  accountName    String            @default("") @map("account_name")
+  accountType    ManualAccountType @map("account_type")
+  balance        Decimal           @db.Decimal(14, 2)
+  currency       String            @default("CAD")
+  holdingsNotes  String?           @map("holdings_notes") @db.Text
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  @@index([userId, snapshotDate])
+  @@map("manual_account_balances")
 }
 
 /// Financial State — canonical financial events (persisted truth)

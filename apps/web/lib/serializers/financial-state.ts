@@ -26,6 +26,10 @@ export interface SerializedFinancialState {
   user_id: string;
   current_cash: number;
   monthly_income: number;
+  balance_source: import("@/services/financial-state/state.types").BalanceSource;
+  manual_balances: import("@/services/financial-state/state.types").ManualAccountBalances;
+  partner_a_opening_cash: number | null;
+  partner_b_opening_cash: number | null;
   events: SerializedFinancialEvent[];
   computed: FinancialState["computed"];
 }
@@ -72,6 +76,10 @@ export function serializeFinancialState(
     user_id: state.user_id,
     current_cash: state.current_cash,
     monthly_income: state.monthly_income,
+    balance_source: state.balance_source,
+    manual_balances: state.manual_balances,
+    partner_a_opening_cash: state.partner_a_opening_cash ?? null,
+    partner_b_opening_cash: state.partner_b_opening_cash ?? null,
     events: state.events.map(serializeFinancialEvent),
     computed: state.computed,
   };

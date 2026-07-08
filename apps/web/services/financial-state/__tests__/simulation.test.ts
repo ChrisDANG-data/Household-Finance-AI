@@ -188,6 +188,74 @@ describe("Financial State Engine — deterministic simulation harness", () => {
     });
   });
 
+  describe("Test G — per-partner balances", () => {
+    const timeline = simulateForecast(state, FORECAST_MONTHS, FORECAST_START_MONTH);
+
+    it("includes partner_balances on every forecast month", () => {
+      for (const entry of timeline) {
+        expect(entry.partner_balances).toBeDefined();
+        expect(entry.partner_balances?.partner_a.opening_balance).toBeDefined();
+        expect(entry.partner_balances?.partner_b.closing_balance).toBeDefined();
+      }
+    });
+
+    it("splits initial cash 50/50 between partners", () => {
+      const jan = getTimelineMonth(timeline, "2026-01");
+      expect(jan.partner_balances?.partner_a.opening_balance).toBe(5000);
+      expect(jan.partner_balances?.partner_b.opening_balance).toBe(5000);
+    });
+
+    it("partner net cash flows sum to household net cash flow", () => {
+      for (const entry of timeline) {
+        const partnerNet =
+          (entry.partner_balances?.partner_a.net_cash_flow ?? 0) +
+          (entry.partner_balances?.partner_b.net_cash_flow ?? 0);
+        expect(partnerNet).toBe(entry.net_cash_flow);
+      }
+    });
+
+    it("partner closing balances sum to household closing balance", () => {
+      for (const entry of timeline) {
+        const partnerClosing =
+          (entry.partner_balances?.partner_a.closing_balance ?? 0) +
+          (entry.partner_balances?.partner_b.closing_balance ?? 0);
+        expect(partnerClosing).toBe(entry.closing_balance);
+      }
+    });
+
+    it("rolls partner opening from prior partner closing", () => {
+      const jan = getTimelineMonth(timeline, "2026-01");
+      const feb = getTimelineMonth(timeline, "2026-02");
+      expect(feb.partner_balances?.partner_a.opening_balance).toBe(
+        jan.partner_balances?.partner_a.closing_balance,
+      );
+      expect(feb.partner_balances?.partner_b.opening_balance).toBe(
+        jan.partner_balances?.partner_b.closing_balance,
+      );
+    });
+
+    it("matches known joint-split expectations for January 2026", () => {
+      const jan = getTimelineMonth(timeline, "2026-01");
+      expect(jan.partner_balances?.partner_a.net_cash_flow).toBe(1490);
+      expect(jan.partner_balances?.partner_b.net_cash_flow).toBe(1490);
+      expect(jan.partner_balances?.partner_a.closing_balance).toBe(6490);
+    });
+
+    it("uses manual partner opening overrides when set", () => {
+      const customState = {
+        ...state,
+        current_cash: 10_000,
+        partner_a_opening_cash: 7_000,
+        partner_b_opening_cash: 3_000,
+      };
+      const customTimeline = simulateForecast(customState, FORECAST_MONTHS, FORECAST_START_MONTH);
+      const jan = getTimelineMonth(customTimeline, "2026-01");
+      expect(jan.partner_balances?.partner_a.opening_balance).toBe(7000);
+      expect(jan.partner_balances?.partner_b.opening_balance).toBe(3000);
+      expect(jan.opening_balance).toBe(10_000);
+    });
+  });
+
   describe("Test F — stability test (determinism)", () => {
     it("simulateForecast produces identical output on repeated runs", () => {
       const run1 = simulateForecast(state, FORECAST_MONTHS, FORECAST_START_MONTH);

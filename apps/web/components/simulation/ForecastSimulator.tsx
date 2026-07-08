@@ -12,6 +12,7 @@ import {
 
 import { useAiProvider } from "@/hooks/use-ai-provider";
 import { GoogleVoiceAskButton } from "@/components/ai/GoogleVoiceAskButton";
+import { OpeningBalanceEditor } from "@/components/simulation/OpeningBalanceEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +107,11 @@ function lineTotal(row: PartnerAmountRow): number {
 
 function partnerCell(amount: number): string {
   return amount > 0 ? formatCad(amount) : "—";
+}
+
+function partnerNetCell(amount: number): string {
+  if (amount === 0) return "—";
+  return `${amount >= 0 ? "+" : ""}${formatCad(amount)}`;
 }
 
 function aggregateLinesByCategory(lines: SerializedEventLine[]): PartnerAmountRow[] {
@@ -503,6 +509,8 @@ export function ForecastSimulator() {
     <div className="space-y-6">
       <ChatInput />
 
+      <OpeningBalanceEditor onSaved={runForecast} />
+
       {/* Forecast Section */}
       <Card id="fi-cash-flow" className="scroll-mt-32">
         <CardHeader>
@@ -588,8 +596,16 @@ export function ForecastSimulator() {
                       {/* Opening Balance */}
                       <tr className="border-b border-border bg-blue-50/50 dark:bg-blue-950/10">
                         <td className="px-3 py-2 font-medium text-blue-700 dark:text-blue-400">Opening Balance</td>
-                        <td className="px-3 py-2 text-right text-xs text-muted-foreground">—</td>
-                        <td className="px-3 py-2 text-right text-xs text-muted-foreground">—</td>
+                        <td className="px-3 py-2 text-right font-mono text-xs font-medium text-blue-700 dark:text-blue-400">
+                          {selectedMonthData.partner_balances
+                            ? formatCad(selectedMonthData.partner_balances.partner_a.opening_balance)
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-xs font-medium text-blue-700 dark:text-blue-400">
+                          {selectedMonthData.partner_balances
+                            ? formatCad(selectedMonthData.partner_balances.partner_b.opening_balance)
+                            : "—"}
+                        </td>
                         <td className="px-3 py-2 text-right font-mono font-medium text-blue-700 dark:text-blue-400">
                           {formatCad(selectedMonthData.opening_balance)}
                         </td>
@@ -738,8 +754,24 @@ export function ForecastSimulator() {
                       {/* Closing Balance */}
                       <tr className="border-b border-border bg-blue-50/50 dark:bg-blue-950/10">
                         <td className="px-3 py-2 font-semibold text-blue-700 dark:text-blue-400">Closing Balance</td>
-                        <td className="px-3 py-2 text-right text-xs text-muted-foreground">—</td>
-                        <td className="px-3 py-2 text-right text-xs text-muted-foreground">—</td>
+                        <td className={`px-3 py-2 text-right font-mono text-xs font-semibold ${
+                          (selectedMonthData.partner_balances?.partner_a.closing_balance ?? 0) >= 0
+                            ? "text-blue-700 dark:text-blue-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}>
+                          {selectedMonthData.partner_balances
+                            ? formatCad(selectedMonthData.partner_balances.partner_a.closing_balance)
+                            : "—"}
+                        </td>
+                        <td className={`px-3 py-2 text-right font-mono text-xs font-semibold ${
+                          (selectedMonthData.partner_balances?.partner_b.closing_balance ?? 0) >= 0
+                            ? "text-blue-700 dark:text-blue-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}>
+                          {selectedMonthData.partner_balances
+                            ? formatCad(selectedMonthData.partner_balances.partner_b.closing_balance)
+                            : "—"}
+                        </td>
                         <td className={`px-3 py-2 text-right font-mono font-semibold ${
                           selectedMonthData.closing_balance >= 0
                             ? "text-blue-700 dark:text-blue-400"
@@ -753,8 +785,24 @@ export function ForecastSimulator() {
                       {/* Net Cash Flow */}
                       <tr className="border-b border-border bg-muted/30">
                         <td className="px-3 py-2 text-muted-foreground">Net Cash Flow</td>
-                        <td className="px-3 py-2 text-right text-xs text-muted-foreground">—</td>
-                        <td className="px-3 py-2 text-right text-xs text-muted-foreground">—</td>
+                        <td className={`px-3 py-2 text-right font-mono text-xs ${
+                          (selectedMonthData.partner_balances?.partner_a.net_cash_flow ?? 0) >= 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}>
+                          {selectedMonthData.partner_balances
+                            ? partnerNetCell(selectedMonthData.partner_balances.partner_a.net_cash_flow)
+                            : "—"}
+                        </td>
+                        <td className={`px-3 py-2 text-right font-mono text-xs ${
+                          (selectedMonthData.partner_balances?.partner_b.net_cash_flow ?? 0) >= 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}>
+                          {selectedMonthData.partner_balances
+                            ? partnerNetCell(selectedMonthData.partner_balances.partner_b.net_cash_flow)
+                            : "—"}
+                        </td>
                         <td className={`px-3 py-2 text-right font-mono ${
                           selectedMonthData.net_cash_flow >= 0
                             ? "text-emerald-600 dark:text-emerald-400"

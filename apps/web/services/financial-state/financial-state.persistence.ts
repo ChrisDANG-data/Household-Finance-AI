@@ -22,6 +22,8 @@ import { normalizeFinancialEvents } from "./normalize";
 import type {
   FinancialState,
   FinancialTimelineState,
+  BalanceSource,
+  ManualAccountBalances,
 } from "./state.types";
 import type {
   FinancialEvent,
@@ -33,10 +35,38 @@ import { AppError } from "@/utils/errors";
 
 export const DEFAULT_USER_ID = "default";
 
+function mapManualBalances(row: {
+  manualChecking: { toString(): string };
+  manualSavings: { toString(): string };
+  manualCashManagement: { toString(): string };
+  manualInvestment: { toString(): string };
+  manualCreditOwed: { toString(): string };
+}): ManualAccountBalances {
+  return {
+    checking: Number(row.manualChecking),
+    savings: Number(row.manualSavings),
+    cash_management: Number(row.manualCashManagement),
+    investment: Number(row.manualInvestment),
+    credit_owed: Number(row.manualCreditOwed),
+  };
+}
+
+function mapBalanceSource(value: string): BalanceSource {
+  return value === "plaid" ? "plaid" : "manual";
+}
+
 export interface UpsertFinancialStateInput {
   user_id?: string;
   current_cash: number;
   monthly_income?: number;
+  partner_a_opening_cash?: number | null;
+  partner_b_opening_cash?: number | null;
+  balance_source?: BalanceSource;
+  manual_checking?: number;
+  manual_savings?: number;
+  manual_cash_management?: number;
+  manual_investment?: number;
+  manual_credit_owed?: number;
 }
 
 export interface CreateFinancialEventInput {
@@ -136,6 +166,7 @@ export class FinancialStatePersistence {
         userId,
         currentCash: 0,
         monthlyIncome: 0,
+        balanceSource: "manual",
       },
       update: {},
     });
@@ -143,17 +174,59 @@ export class FinancialStatePersistence {
 
   async upsertStateScalars(input: UpsertFinancialStateInput): Promise<FinancialState> {
     const userId = input.user_id ?? DEFAULT_USER_ID;
+
+    if (
+      input.partner_a_opening_cash != null &&
+      input.partner_b_opening_cash != null
+    ) {
+      const partnerSum =
+        Math.round(
+          (input.partner_a_opening_cash + input.partner_b_opening_cash) * 100,
+        ) / 100;
+      if (Math.abs(partnerSum - input.current_cash) > 0.01) {
+        throw new AppError(
+          "partner_a_opening_cash + partner_b_opening_cash must equal current_cash",
+          { code: "VALIDATION_ERROR", statusCode: 400 },
+        );
+      }
+    }
+
+    const scalarData = {
+      currentCash: input.current_cash,
+      monthlyIncome: input.monthly_income ?? 0,
+      ...(input.partner_a_opening_cash !== undefined && {
+        partnerAOpeningCash: input.partner_a_opening_cash,
+      }),
+      ...(input.partner_b_opening_cash !== undefined && {
+        partnerBOpeningCash: input.partner_b_opening_cash,
+      }),
+      ...(input.balance_source !== undefined && {
+        balanceSource: input.balance_source,
+      }),
+      ...(input.manual_checking !== undefined && {
+        manualChecking: input.manual_checking,
+      }),
+      ...(input.manual_savings !== undefined && {
+        manualSavings: input.manual_savings,
+      }),
+      ...(input.manual_cash_management !== undefined && {
+        manualCashManagement: input.manual_cash_management,
+      }),
+      ...(input.manual_investment !== undefined && {
+        manualInvestment: input.manual_investment,
+      }),
+      ...(input.manual_credit_owed !== undefined && {
+        manualCreditOwed: input.manual_credit_owed,
+      }),
+    };
+
     await prisma.financialState.upsert({
       where: { userId },
       create: {
         userId,
-        currentCash: input.current_cash,
-        monthlyIncome: input.monthly_income ?? 0,
+        ...scalarData,
       },
-      update: {
-        currentCash: input.current_cash,
-        monthlyIncome: input.monthly_income ?? 0,
-      },
+      update: scalarData,
     });
     return this.loadState(userId);
   }
@@ -172,6 +245,14 @@ export class FinancialStatePersistence {
         user_id: userId,
         current_cash: 0,
         monthly_income: 0,
+        balance_source: "manual",
+        manual_balances: {
+          checking: 0,
+          savings: 0,
+          cash_management: 0,
+          investment: 0,
+          credit_owed: 0,
+        },
         events: [],
         referenceMonth,
       });
@@ -185,6 +266,16 @@ export class FinancialStatePersistence {
         user_id: userId,
         current_cash: Number(row.currentCash),
         monthly_income: Number(row.monthlyIncome),
+        balance_source: mapBalanceSource(row.balanceSource ?? "manual"),
+        manual_balances: mapManualBalances(row),
+        partner_a_opening_cash:
+          row.partnerAOpeningCash != null
+            ? Number(row.partnerAOpeningCash)
+            : null,
+        partner_b_opening_cash:
+          row.partnerBOpeningCash != null
+            ? Number(row.partnerBOpeningCash)
+            : null,
         events,
       },
       referenceMonth,

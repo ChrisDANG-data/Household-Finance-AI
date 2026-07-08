@@ -11,6 +11,8 @@ import type {
   FinancialState,
   FinancialTimelineState,
   SimulateForecastOptions,
+  BalanceSource,
+  ManualAccountBalances,
 } from "./state.types";
 import type { FinancialEvent, RawFinancialEvent } from "./types";
 
@@ -18,6 +20,10 @@ export interface CreateStateInput {
   user_id: string;
   current_cash: number;
   monthly_income?: number;
+  balance_source?: BalanceSource;
+  manual_balances?: ManualAccountBalances;
+  partner_a_opening_cash?: number | null;
+  partner_b_opening_cash?: number | null;
   events: RawFinancialEvent[];
   referenceMonth?: string;
 }
@@ -43,6 +49,16 @@ export class FinancialStateEngine {
       user_id: input.user_id,
       current_cash: input.current_cash,
       monthly_income: input.monthly_income ?? 0,
+      balance_source: input.balance_source ?? "manual",
+      manual_balances: input.manual_balances ?? {
+        checking: 0,
+        savings: 0,
+        cash_management: 0,
+        investment: 0,
+        credit_owed: 0,
+      },
+      partner_a_opening_cash: input.partner_a_opening_cash ?? null,
+      partner_b_opening_cash: input.partner_b_opening_cash ?? null,
       events,
     };
     return buildFinancialState(base, referenceMonth);

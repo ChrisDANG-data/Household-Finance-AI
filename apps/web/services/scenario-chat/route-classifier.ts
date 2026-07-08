@@ -1,4 +1,5 @@
 import { isSimpleMonthForecastQuery } from "./monthly-lookup";
+import { isPeriodAggregationQuery } from "./period-lookup";
 
 /** Specialist selection for LangGraph hybrid routing. */
 export type AnalystMode = "auto" | "cost" | "investment" | "payments";
@@ -15,8 +16,8 @@ export type OrchestratorRoute =
 export function isComplexMultiAgentQuery(message: string): boolean {
   const text = message.trim().toLowerCase();
 
-  // Month-specific ledger totals — handled deterministically, not LangGraph
-  if (isSimpleMonthForecastQuery(message)) {
+  // Month-specific or period ledger totals — handled deterministically, not LangGraph
+  if (isSimpleMonthForecastQuery(message) || isPeriodAggregationQuery(message)) {
     return false;
   }
 

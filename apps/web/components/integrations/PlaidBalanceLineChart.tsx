@@ -19,6 +19,7 @@ const SERIES_COLORS = [
 interface PlaidBalanceLineChartProps {
   series: PlaidBalanceChartSeries[];
   className?: string;
+  emptyMessage?: string;
 }
 
 function formatCad(value: number): string {
@@ -32,6 +33,7 @@ function formatCad(value: number): string {
 export function PlaidBalanceLineChart({
   series,
   className,
+  emptyMessage = "No balance history yet. Connect Plaid and run a sync to start tracking.",
 }: PlaidBalanceLineChartProps) {
   const { labels, paths, yMin, yMax } = useMemo(() => {
     const dateSet = new Set<string>();
@@ -68,7 +70,7 @@ export function PlaidBalanceLineChart({
   if (labels.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        No balance history yet. Connect Plaid and run a sync to start tracking.
+        {emptyMessage}
       </p>
     );
   }

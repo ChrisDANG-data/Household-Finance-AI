@@ -284,6 +284,14 @@ export async function fetchPlaidBalanceHistory(): Promise<PlaidBalanceHistoryRes
   );
 }
 
+export async function fetchManualBalanceHistory(): Promise<PlaidBalanceHistoryResponse> {
+  return parseApi(
+    await fetch("/api/financial-state/manual-accounts/history", {
+      cache: "no-store",
+    }),
+  );
+}
+
 export type DisposableAssetsSummary =
   import("@/services/financial-state/disposable-assets.service").DisposableAssetsSummary;
 

@@ -6,8 +6,13 @@ import {
   isEventActiveInMonth,
   parseMonth,
 } from "./dates";
-import type { FinancialEvent, FinancialEventFrequency } from "./types";
-import type { FinancialState, FinancialTimelineState } from "./state.types";
+import type { FinancialEvent, FinancialEventFrequency, FinancialEventOwner } from "./types";
+import type {
+  FinancialState,
+  FinancialTimelineState,
+  PartnerBalanceSlice,
+  PartnerBalances,
+} from "./state.types";
 
 const WEEKS_PER_MONTH = 4.33;
 
@@ -149,6 +154,154 @@ function isOutflowEvent(event: FinancialEvent): boolean {
   return isExpenseEvent(event) || isInvestmentEvent(event);
 }
 
+/** Partner share of an amount (joint → 50/50; otherwise full amount to owner). */
+export function partnerAmountShare(
+  owner: FinancialEventOwner,
+  partner: "partner_a" | "partner_b",
+  amount: number,
+): number {
+  if (amount <= 0) return 0;
+  if (owner === "joint") return roundMoney(amount / 2);
+  if (owner === partner) return roundMoney(amount);
+  return 0;
+}
+
+/** Resolve month-0 partner openings from manual overrides or a 50/50 split of current_cash. */
+export function resolvePartnerOpeningBalances(
+  state: Pick<
+    FinancialState,
+    "current_cash" | "partner_a_opening_cash" | "partner_b_opening_cash"
+  >,
+): { partnerA: number; partnerB: number } {
+  const manualA = state.partner_a_opening_cash;
+  const manualB = state.partner_b_opening_cash;
+  if (manualA != null && manualB != null) {
+    return {
+      partnerA: roundMoney(manualA),
+      partnerB: roundMoney(manualB),
+    };
+  }
+
+  const partnerA = roundMoney(state.current_cash / 2);
+  return {
+    partnerA,
+    partnerB: roundMoney(state.current_cash - partnerA),
+  };
+}
+
+type PartnerFlowTotals = Pick<
+  PartnerBalanceSlice,
+  "income_total" | "expense_total" | "investment_total" | "net_cash_flow"
+>;
+
+function computePartnerMonthFlows(
+  events: FinancialEvent[],
+  month: string,
+): { partner_a: PartnerFlowTotals; partner_b: PartnerFlowTotals } {
+  const partner_a = {
+    income_total: 0,
+    expense_total: 0,
+    investment_total: 0,
+    net_cash_flow: 0,
+  };
+  const partner_b = {
+    income_total: 0,
+    expense_total: 0,
+    investment_total: 0,
+    net_cash_flow: 0,
+  };
+
+  for (const event of events) {
+    const amount = eventAmountForMonth(event, month);
+    if (amount <= 0) continue;
+
+    const targets = [
+      { key: "partner_a" as const, slice: partner_a },
+      { key: "partner_b" as const, slice: partner_b },
+    ];
+
+    for (const { key, slice } of targets) {
+      const share = partnerAmountShare(event.owner, key, amount);
+      if (share <= 0) continue;
+
+      if (isIncomeEvent(event)) {
+        slice.income_total += share;
+      } else if (isInvestmentEvent(event)) {
+        slice.investment_total += share;
+      } else if (isExpenseEvent(event)) {
+        slice.expense_total += share;
+      }
+    }
+  }
+
+  for (const slice of [partner_a, partner_b]) {
+    slice.income_total = roundMoney(slice.income_total);
+    slice.expense_total = roundMoney(slice.expense_total);
+    slice.investment_total = roundMoney(slice.investment_total);
+    slice.net_cash_flow = roundMoney(
+      slice.income_total - slice.expense_total - slice.investment_total,
+    );
+  }
+
+  return { partner_a, partner_b };
+}
+
+function buildPartnerBalances(
+  entry: FinancialTimelineState,
+  partnerAOpening: number,
+  partnerBOpening: number,
+): PartnerBalances {
+  const flows = computePartnerMonthFlows(entry.active_events, entry.month);
+
+  const partner_a: PartnerBalanceSlice = {
+    opening_balance: roundMoney(partnerAOpening),
+    income_total: flows.partner_a.income_total,
+    expense_total: flows.partner_a.expense_total,
+    investment_total: flows.partner_a.investment_total,
+    net_cash_flow: flows.partner_a.net_cash_flow,
+    closing_balance: roundMoney(
+      partnerAOpening + flows.partner_a.net_cash_flow,
+    ),
+  };
+
+  const partner_b: PartnerBalanceSlice = {
+    opening_balance: roundMoney(partnerBOpening),
+    income_total: flows.partner_b.income_total,
+    expense_total: flows.partner_b.expense_total,
+    investment_total: flows.partner_b.investment_total,
+    net_cash_flow: flows.partner_b.net_cash_flow,
+    closing_balance: roundMoney(
+      partnerBOpening + flows.partner_b.net_cash_flow,
+    ),
+  };
+
+  return { partner_a, partner_b };
+}
+
+/** Attach per-partner opening/closing/net to each forecast month (manual or 50/50 initial cash split). */
+export function enrichTimelineWithPartnerBalances(
+  timeline: FinancialTimelineState[],
+  state: Pick<
+    FinancialState,
+    "current_cash" | "partner_a_opening_cash" | "partner_b_opening_cash"
+  >,
+): FinancialTimelineState[] {
+  const initial = resolvePartnerOpeningBalances(state);
+  let partnerAOpening = initial.partnerA;
+  let partnerBOpening = initial.partnerB;
+
+  return timeline.map((entry) => {
+    const partner_balances = buildPartnerBalances(
+      entry,
+      partnerAOpening,
+      partnerBOpening,
+    );
+    partnerAOpening = partner_balances.partner_a.closing_balance;
+    partnerBOpening = partner_balances.partner_b.closing_balance;
+    return { ...entry, partner_balances };
+  });
+}
+
 /**
  * Deterministic monthly cash flow projection for a single month.
  * Does not mutate state. No AI, no database.
@@ -225,7 +378,7 @@ export function simulateForecast(
     timeline.push(entry);
     balance = entry.closing_balance;
   }
-  return timeline;
+  return enrichTimelineWithPartnerBalances(timeline, state);
 }
 
 export function computeDerivedFields(

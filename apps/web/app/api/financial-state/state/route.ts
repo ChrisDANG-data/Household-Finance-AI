@@ -45,6 +45,34 @@ export async function PUT(request: Request) {
         statusCode: 400,
       });
     }
+    if (body.current_cash < 0) {
+      throw new AppError("current_cash must be >= 0", {
+        code: "VALIDATION_ERROR",
+        statusCode: 400,
+      });
+    }
+    if (body.balance_source != null && body.balance_source !== "plaid" && body.balance_source !== "manual") {
+      throw new AppError("balance_source must be plaid or manual", {
+        code: "VALIDATION_ERROR",
+        statusCode: 400,
+      });
+    }
+    for (const [field, value] of [
+      ["partner_a_opening_cash", body.partner_a_opening_cash],
+      ["partner_b_opening_cash", body.partner_b_opening_cash],
+      ["manual_checking", body.manual_checking],
+      ["manual_savings", body.manual_savings],
+      ["manual_cash_management", body.manual_cash_management],
+      ["manual_investment", body.manual_investment],
+      ["manual_credit_owed", body.manual_credit_owed],
+    ] as const) {
+      if (value != null && (typeof value !== "number" || value < 0)) {
+        throw new AppError(`${field} must be a non-negative number or null`, {
+          code: "VALIDATION_ERROR",
+          statusCode: 400,
+        });
+      }
+    }
     const state = await financialStatePersistence.upsertStateScalars({
       ...body,
       user_id: userId,

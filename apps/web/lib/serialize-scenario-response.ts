@@ -1,5 +1,9 @@
 import type { ScenarioChatResponse } from "@/services/scenario-chat/types";
-import type { FinancialTimelineState } from "@/services/financial-state/state.types";
+import type {
+  FinancialTimelineState,
+  PartnerBalanceSlice,
+  PartnerBalances,
+} from "@/services/financial-state/state.types";
 import type {
   FinancialEvent,
   FinancialEventOwner,
@@ -9,6 +13,20 @@ export interface SerializedEventLine {
   category: string;
   amount: number;
   owner: FinancialEventOwner;
+}
+
+export interface SerializedPartnerBalanceSlice {
+  opening_balance: number;
+  closing_balance: number;
+  net_cash_flow: number;
+  income_total: number;
+  expense_total: number;
+  investment_total: number;
+}
+
+export interface SerializedPartnerBalances {
+  partner_a: SerializedPartnerBalanceSlice;
+  partner_b: SerializedPartnerBalanceSlice;
 }
 
 export interface SerializedTimelineMonth {
@@ -27,6 +45,7 @@ export interface SerializedTimelineMonth {
   income_lines: SerializedEventLine[];
   expense_lines: SerializedEventLine[];
   investment_lines: SerializedEventLine[];
+  partner_balances?: SerializedPartnerBalances;
 }
 
 export interface SerializedScenarioChatResponse
@@ -43,6 +62,29 @@ export interface SerializedScenarioChatResponse
 function eventMonthlyAmount(event: FinancialEvent): number {
   if (event.frequency === "weekly") return event.amount * 4.33;
   return event.amount;
+}
+
+function serializePartnerSlice(
+  slice: PartnerBalanceSlice,
+): SerializedPartnerBalanceSlice {
+  return {
+    opening_balance: slice.opening_balance,
+    closing_balance: slice.closing_balance,
+    net_cash_flow: slice.net_cash_flow,
+    income_total: slice.income_total,
+    expense_total: slice.expense_total,
+    investment_total: slice.investment_total,
+  };
+}
+
+function serializePartnerBalances(
+  balances: PartnerBalances | undefined,
+): SerializedPartnerBalances | undefined {
+  if (!balances) return undefined;
+  return {
+    partner_a: serializePartnerSlice(balances.partner_a),
+    partner_b: serializePartnerSlice(balances.partner_b),
+  };
 }
 
 export function serializeTimeline(
@@ -104,6 +146,7 @@ export function serializeTimeline(
       income_lines: income_lines.sort(byCategory),
       expense_lines: expense_lines.sort(byCategory),
       investment_lines: investment_lines.sort(byCategory),
+      partner_balances: serializePartnerBalances(m.partner_balances),
     };
   });
 }

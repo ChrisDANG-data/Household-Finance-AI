@@ -111,7 +111,7 @@ function eventAmountForMonth(event: FinancialEvent): number {
   return event.amount;
 }
 
-function formatMoney(amount: number): string {
+export function formatMoney(amount: number): string {
   const abs = Math.abs(amount);
   const formatted = abs.toLocaleString("en-CA", {
     minimumFractionDigits: 2,
@@ -134,7 +134,7 @@ type QueryKind =
   | "closing_balance"
   | "opening_balance";
 
-function detectQueryKind(message: string): QueryKind {
+export function detectQueryKind(message: string): QueryKind {
   const lower = message.toLowerCase();
   if (lower.includes("closing") && lower.includes("balance")) {
     return "closing_balance";
