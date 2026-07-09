@@ -10,6 +10,10 @@
 
 **Live app:** https://household-financial-web.vercel.app
 
+**Slides:** [Google Slides](https://docs.google.com/presentation/d/1kIrrg-30TM1GRJpX7u-ojIKacxlEQRVO/view?usp=sharing) · [PPT in repo](Presentation/Household_Financial_Intelligence.pptx) · [Q&A](Presentation/PRESENTATION_QA.md)
+
+**Demo video:** [Watch walkthrough](https://youtu.be/Y40ZPdR7c7w)
+
 ![Home — Household Financial Intelligence](docs/images/home.png)
 
 ---
@@ -180,4 +184,4 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## License
 
-Course final project. Add an MIT license if you open-source for portfolio use.
+MIT — see [LICENSE](LICENSE).

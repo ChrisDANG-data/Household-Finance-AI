@@ -56,4 +56,16 @@ Use these in the README “Why this project” story, presentation slides, and d
 - Prefer ~1280–1440px wide; avoid huge files (>1 MB if possible).
 - Use one theme (light or dark) consistently.
 - Never include real account numbers, SSNs, or personal bills.
-- A 60–90s Loom/YouTube demo linked from the README is even stronger than static shots alone.
+
+## PPT and video (not in this folder)
+
+Put **demo video** and **PPT** links in the **root [README.md](../../README.md)** (under the live app link) — that is what recruiters see on GitHub.
+
+| Asset | Status | Notes |
+|-------|--------|--------|
+| **Slides** | Linked | [Google Slides](https://docs.google.com/presentation/d/1kIrrg-30TM1GRJpX7u-ojIKacxlEQRVO/view?usp=sharing) — set sharing to **Anyone with the link can view** |
+| **Video** | Linked | [YouTube walkthrough](https://youtu.be/Y40ZPdR7c7w) — keep local `.mp4` out of Git |
+
+This folder (`docs/images/`) is only for **screenshots** used in the README gallery.
+
+
