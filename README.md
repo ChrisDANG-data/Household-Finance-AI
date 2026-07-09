@@ -10,6 +10,8 @@
 
 **Live app:** https://household-financial-web.vercel.app
 
+**Demo login:** `householdfinance` / `householdfinanceai`
+
 **Slides:** [Google Slides](https://docs.google.com/presentation/d/1kIrrg-30TM1GRJpX7u-ojIKacxlEQRVO/view?usp=sharing)
 
 **Demo video:** [Watch walkthrough](https://youtu.be/Y40ZPdR7c7w)
