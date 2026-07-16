@@ -12,6 +12,9 @@ type AuthMode = "signin" | "register";
 
 type AuthUser = { id: string; username: string };
 
+const DEMO_USERNAME = "householdfinance";
+const DEMO_PASSWORD = "householdfinanceai";
+
 function PasswordInput({
   id,
   label,
@@ -22,6 +25,7 @@ function PasswordInput({
   onToggleShow,
   isHero,
   disabled,
+  placeholder,
 }: {
   id: string;
   label: string;
@@ -32,6 +36,7 @@ function PasswordInput({
   onToggleShow: () => void;
   isHero: boolean;
   disabled?: boolean;
+  placeholder?: string;
 }) {
   return (
     <div>
@@ -52,7 +57,8 @@ function PasswordInput({
           autoComplete={autoComplete}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full rounded-lg border border-input bg-background py-2 pr-11 pl-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-input bg-background py-2 pr-11 pl-3 text-sm text-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
           required
           minLength={8}
           disabled={disabled}
@@ -99,8 +105,12 @@ export function LoginForm({
 }: LoginFormProps) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>(defaultMode);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(
+    defaultMode === "signin" ? DEMO_USERNAME : "",
+  );
+  const [password, setPassword] = useState(
+    defaultMode === "signin" ? DEMO_PASSWORD : "",
+  );
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -194,6 +204,8 @@ export function LoginForm({
             )}
             onClick={() => {
               setMode("signin");
+              setUsername(DEMO_USERNAME);
+              setPassword(DEMO_PASSWORD);
               setConfirmPassword("");
               setError(null);
               setSuccessMessage(null);
@@ -216,6 +228,8 @@ export function LoginForm({
             )}
             onClick={() => {
               setMode("register");
+              setUsername("");
+              setPassword("");
               setConfirmPassword("");
               setError(null);
               setSuccessMessage(null);
@@ -270,7 +284,8 @@ export function LoginForm({
               autoComplete="username"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder={mode === "signin" ? DEMO_USERNAME : undefined}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
               required
               disabled={Boolean(successMessage)}
             />
@@ -286,6 +301,7 @@ export function LoginForm({
             onToggleShow={() => setShowPassword((visible) => !visible)}
             isHero={isHero}
             disabled={Boolean(successMessage)}
+            placeholder={mode === "signin" ? DEMO_PASSWORD : undefined}
           />
 
           {mode === "register" ? (
