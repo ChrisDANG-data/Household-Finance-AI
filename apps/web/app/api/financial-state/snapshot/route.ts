@@ -29,11 +29,12 @@ export async function POST(request: Request) {
 
     if (body.use_persisted) {
       const persisted = await financialStatePersistence.loadState(userId);
+      const { computed: _computed, ...persistedBase } = persisted;
       const state = financialStateEngine.withComputed({
+        ...persistedBase,
         user_id: userId,
         current_cash: body.current_cash ?? persisted.current_cash,
         monthly_income: body.monthly_income ?? persisted.monthly_income,
-        events: persisted.events,
       });
       const timeline = financialStateEngine.simulateForecast(state, { months });
       const risk = financialStateEngine.analyzeRisk(state, timeline);

@@ -55,6 +55,14 @@ describe("event-dedupe", () => {
       user_id: "default",
       current_cash: 0,
       monthly_income: 0,
+      balance_source: "manual" as const,
+      manual_balances: {
+        checking: 0,
+        savings: 0,
+        cash_management: 0,
+        investment: 0,
+        credit_owed: 0,
+      },
       events: deduped,
       computed: {
         monthly_net_cash_flow: 0,

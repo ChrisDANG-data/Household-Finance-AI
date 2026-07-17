@@ -240,7 +240,7 @@ export class DocumentExtractionService {
         frequency: eventFrequency,
         start_date: ob.startDate,
         end_date: ob.endDate || null,
-        owner: ob.owner ?? "partner_a",
+        owner: parseOwner(ob.owner),
         confidence: 0.9,
         source_document_id: documentId,
         metadata: {

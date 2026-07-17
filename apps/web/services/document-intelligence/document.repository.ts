@@ -7,6 +7,7 @@ import { saveDocumentFile } from "@/lib/storage/document-storage";
 import { serializeDocument, type SerializedDocument } from "@/lib/serializers";
 import { textExtractionService } from "@/services/document-intelligence/extraction/text-extraction.service";
 import type { ExtractedObligation } from "@/services/document-intelligence/extraction/document-extraction.service";
+import type { FinancialEventOwner } from "@/services/financial-state/types";
 import type { DocumentMimeType, ReviewableObligation } from "@/types/documents";
 import { documentUploadService } from "@/services/document-intelligence/upload/document-upload.service";
 import { AppError } from "@/utils/errors";
@@ -44,7 +45,7 @@ function toReviewable(ob: ExtractedObligation): ReviewableObligation {
     startDate: ob.startDate,
     endDate: ob.endDate,
     notes: ob.notes,
-    owner: ob.owner ?? "partner_a",
+    owner: (ob.owner as FinancialEventOwner | undefined) ?? "partner_a",
   };
 }
 
