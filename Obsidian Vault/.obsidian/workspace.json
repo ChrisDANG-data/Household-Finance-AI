@@ -11,17 +11,10 @@
             "id": "5396d30522773b89",
             "type": "leaf",
             "state": {
-              "type": "canvas",
-              "state": {
-                "file": "Presentation/Full Presentation.canvas",
-                "viewState": {
-                  "x": -30,
-                  "y": -2640,
-                  "zoom": -0.6381710945544747
-                }
-              },
-              "icon": "lucide-layout-dashboard",
-              "title": "Full Presentation"
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -56,7 +49,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "n8n",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -77,7 +70,8 @@
               "title": "Bookmarks"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -185,13 +179,14 @@
   },
   "active": "5396d30522773b89",
   "lastOpenFiles": [
-    "Backend intro for presentation.canvas",
+    "Household/README.md",
+    "Presentation/automation.canvas",
     "Presentation/Full Presentation.canvas",
+    "Backend intro for presentation.canvas",
     "Presentation/Frontend intro for presentation.canvas",
     "Presentation/ai Pipeline.canvas",
     "Backend.canvas",
     "Frontend.canvas",
-    "Presentation/automation.canvas",
     "Presentation/Untitled.md",
     "README.md",
     "Household/Categories/car-insurance.md",
@@ -208,7 +203,6 @@
     "Household/Documents/03751ab4-58d5-4cb3-bff0-4207aa31e23e.md",
     "Household/Events/cmqr9rhxv000fkw04kcg0s2uh.md",
     "Household/Events/cmqr9rhyf000jkw04fsyn1pty.md",
-    "Household/README.md",
     "Household/Documents/0bcd0c81-05a2-486f-b0ac-ebba50315dee.md",
     "Household/Categories/house-insurance.md",
     "Household/Events/cmqr9rhws0007kw04ckux9zu1.md",

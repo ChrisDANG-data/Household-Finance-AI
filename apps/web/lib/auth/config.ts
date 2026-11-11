@@ -19,3 +19,11 @@ export function isAutomationApiPath(pathname: string): boolean {
   if (pathname === "/api/integrations/plaid/scheduled-sync") return true;
   return false;
 }
+
+/**
+ * Agent API — authenticated inside each route by a per-user API key
+ * (the database lookup cannot run in middleware).
+ */
+export function isAgentApiPath(pathname: string): boolean {
+  return pathname.startsWith("/api/agent/");
+}

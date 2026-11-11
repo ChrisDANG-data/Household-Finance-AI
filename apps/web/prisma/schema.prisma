@@ -267,3 +267,29 @@ model PlaidSyncCursor {
 
   @@map("plaid_sync_cursors")
 }
+
+/// Auth — per-user API keys for AI agents (only a SHA-256 hash is stored; the key is shown once)
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  name       String
+  keyPrefix  String    @map("key_prefix")
+  keyHash    String    @unique @map("key_hash")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  @@index([userId])
+  @@map("api_keys")
+}
+
+/// Cost control — AI requests per user per UTC day
+model AiUsageDaily {
+  userId    String   @map("user_id")
+  day       String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([userId, day])
+  @@map("ai_usage_daily")
+}

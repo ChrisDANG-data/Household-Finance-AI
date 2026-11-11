@@ -46,7 +46,7 @@ Household money lives in spreadsheets, bank apps, and PDF folders. Generic chatb
 ## Highlights
 
 - **Four-engine architecture** — Document Intelligence, Financial State (ledger), Forecast Simulation, AI Explanation — with strict dependency boundaries ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md))
-- **Hybrid scenario chat** — TypeScript fast-path for simple queries; **LangGraph** multi-agent orchestration for complex what-if questions ([services/langgraph-orchestrator](services/langgraph-orchestrator))
+- **Hybrid scenario chat** — TypeScript fast-path for simple queries; optional **LangGraph** multi-agent orchestration for complex what-if questions ([services/langgraph-orchestrator](services/langgraph-orchestrator)) — off in the live demo, which falls back to the deterministic forecast advisor
 - **Document pipeline** — PDF/image upload → OCR/extraction → human review → canonical `FinancialEvent` → embeddings for RAG
 - **Plaid integration** — Link accounts, sync balances, encrypted token storage, disposable-assets view
 - **Production hardening** — Per-user auth, session cookies, AES-256-GCM for Plaid tokens, fail-closed automation webhooks ([docs/PRIVACY.md](docs/PRIVACY.md))
@@ -62,7 +62,7 @@ Household money lives in spreadsheets, bank apps, and PDF folders. Generic chatb
 - Implemented **hybrid scenario-chat routing**: ledger lookup → LangGraph specialists → document RAG → forecast + advisor
 - Built the **document intelligence vertical slice**: upload, extraction, obligation review UI, confirm-to-ledger, and Postgres-backed embeddings
 - Added **Tier-1 privacy controls**: household login, scrypt password hashes, encrypted Plaid tokens, Bearer-protected automation routes
-- Deployed **Next.js on Vercel**, **Neon Postgres**, and **LangGraph on Railway** with CI gates on every PR
+- Deployed **Next.js on Vercel** and **Neon Postgres** with CI gates on every PR; the **LangGraph** service is Railway-ready but not running in the live demo
 
 ---
 
@@ -150,11 +150,11 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 | **Backend** | Next.js API routes, TypeScript services layer |
 | **Database** | PostgreSQL (Neon), Prisma ORM 6 |
 | **AI** | Anthropic Claude, OpenAI (embeddings/STT), structured output validation |
-| **Orchestration** | LangGraph (Python FastAPI) on Railway |
+| **Orchestration** | LangGraph (Python FastAPI) — optional, self-hosted (e.g. Railway) |
 | **Banking** | Plaid Direct API (encrypted tokens at rest) |
 | **Documents** | MuPDF, Tesseract OCR, local + OpenAI embeddings |
 | **Automation** | n8n, Telegram webhooks |
-| **Deploy** | Vercel (web), Neon (DB), Railway (LangGraph) |
+| **Deploy** | Vercel (web), Neon (DB); Railway (LangGraph, optional) |
 | **CI** | GitHub Actions — lint, 125 tests, production build |
 
 ---
@@ -181,7 +181,7 @@ Full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 |---------|----------|-------|
 | Web app | **Vercel** | Root directory: `apps/web` |
 | Database | **Neon** | `DATABASE_URL` in Vercel env |
-| LangGraph | **Railway** | `LANGGRAPH_URL` in Vercel env |
+| LangGraph (optional) | **Railway** | Not running in the live demo. To enable: `LANGGRAPH_ENABLED=true` + `LANGGRAPH_URL` in Vercel env |
 
 
 ## License

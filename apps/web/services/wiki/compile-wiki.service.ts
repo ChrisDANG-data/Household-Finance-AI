@@ -16,7 +16,8 @@ export interface WikiCompileResult {
   eventCount: number;
 }
 
-const USER_ID = "default";
+/** Legacy shared ledger id used when login is disabled (local dev). */
+const DEFAULT_WIKI_USER_ID = "default";
 const EXCERPT_CHARS = 600;
 /** App-generated financial wiki lives under this folder in the Obsidian vault. */
 export const HOUSEHOLD_WIKI_ROOT = "Household";
@@ -286,19 +287,26 @@ function buildEventPage(input: {
   };
 }
 
-export async function compileWikiVault(): Promise<WikiCompileResult> {
+/** Compile wiki notes for ONE user — every query is scoped to that user. */
+export async function compileWikiVault(
+  userId: string = DEFAULT_WIKI_USER_ID,
+): Promise<WikiCompileResult> {
   const [documents, events, obligations, state] = await Promise.all([
-    prisma.document.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.document.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    }),
     prisma.financialEvent.findMany({
-      where: { userId: USER_ID },
+      where: { userId },
       include: { sourceDocument: true },
       orderBy: { startDate: "desc" },
     }),
     prisma.financialObligation.findMany({
+      where: { userId },
       include: { sourceDocument: true },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.financialState.findUnique({ where: { userId: USER_ID } }),
+    prisma.financialState.findUnique({ where: { userId } }),
   ]);
 
   const categories = new Set<string>();

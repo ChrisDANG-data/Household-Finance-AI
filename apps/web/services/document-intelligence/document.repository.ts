@@ -147,7 +147,7 @@ export class DocumentRepository {
 
       const [chunksIndexed, wikiResult] = await Promise.all([
         this.indexForSearch(documentId, processing),
-        this.syncObsidianWiki(processing),
+        this.syncObsidianWiki(processing, doc.userId),
       ]);
       processing.chunksIndexed = chunksIndexed;
       processing.wikiPagesWritten = wikiResult.pageCount;
@@ -172,10 +172,11 @@ export class DocumentRepository {
 
   private async syncObsidianWiki(
     processing: DocumentProcessSummary,
+    userId: string,
   ): Promise<{ pageCount: number; vaultSynced: boolean }> {
     try {
       const { syncObsidianVault } = await import("@/services/wiki");
-      const result = await syncObsidianVault();
+      const result = await syncObsidianVault(userId);
       return {
         pageCount: result.pageCount,
         vaultSynced: result.vaultSynced,

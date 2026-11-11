@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 
+import { withAuthenticatedHandler } from "@/lib/api/authenticated-handler";
 import { exportObsidianVaultZip } from "@/services/wiki/obsidian-vault.service";
-import { jsonError } from "@/utils/api-response";
-import { toAppError } from "@/utils/errors";
 
 export const runtime = "nodejs";
 
-/** GET — Download the compiled Obsidian vault as a ZIP */
+/** GET — Download the signed-in user's compiled Obsidian vault as a ZIP */
 export async function GET() {
-  try {
-    const { buffer, compiled } = await exportObsidianVaultZip();
+  return withAuthenticatedHandler(async (userId) => {
+    const { buffer, compiled } = await exportObsidianVaultZip(userId);
     const filename = `finintel-obsidian-vault-${new Date().toISOString().slice(0, 10)}.zip`;
 
     return new NextResponse(new Uint8Array(buffer), {
@@ -21,7 +20,5 @@ export async function GET() {
         "X-Wiki-Page-Count": String(compiled.pageCount),
       },
     });
-  } catch (error) {
-    return jsonError(toAppError(error));
-  }
+  });
 }

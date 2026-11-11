@@ -38,6 +38,7 @@ We do **not** sell household data. LLM providers process text only when you use 
 |---------|----------|
 | **Household login** | On Vercel (and when `AUTH_ENABLED=true`), pages and APIs require a signed session cookie except `/`, `/login`, and auth/health endpoints. |
 | **User accounts** | Usernames and **password hashes** (scrypt) live in Postgres `users` table — never plaintext passwords. |
+| **Agent API keys** | Per-user keys for AI agents (`/api/agent/*`). Only a SHA-256 hash is stored; each key reaches only its owner's data and can be revoked on `/api-keys`. |
 | **Automation webhooks** | n8n/Telegram routes require `Authorization: Bearer <AUTOMATION_WEBHOOK_TOKEN>`. In production, the token is **required** (fail closed). |
 | **Plaid tokens** | Stored **encrypted at rest** when `TOKEN_ENCRYPTION_KEY` is set (required on Vercel). Never returned to the browser. |
 | **Blob files** | Private; read via server token only. |

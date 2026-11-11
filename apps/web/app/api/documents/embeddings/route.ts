@@ -1,13 +1,14 @@
-import { jsonSuccess } from "@/utils/api-response";
-import { withApiHandler } from "@/lib/api/route-handler";
+import { withAuthenticatedHandler } from "@/lib/api/authenticated-handler";
+import { documentRepository } from "@/services/document-intelligence/document.repository";
 import { documentEmbeddingService } from "@/services/document-intelligence/indexing/embedding.service";
+import { jsonSuccess } from "@/utils/api-response";
 import { AppError } from "@/utils/errors";
 
 export const runtime = "nodejs";
 
-/** POST — Index a document's extracted text into vector chunks for RAG */
+/** POST — Index one of the signed-in user's documents into vector chunks for RAG */
 export async function POST(request: Request) {
-  return withApiHandler(async () => {
+  return withAuthenticatedHandler(async (userId) => {
     const body = await request.json();
     const { documentId } = body;
 
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
         statusCode: 400,
       });
     }
+
+    // Ownership check — 404s when the document belongs to another user.
+    await documentRepository.getById(documentId, userId);
 
     const records = await documentEmbeddingService.indexDocument(documentId);
 

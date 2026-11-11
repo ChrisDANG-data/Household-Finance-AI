@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogIn, LogOut } from "lucide-react";
+import { KeyRound, LogIn, LogOut } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -129,6 +129,10 @@ export function AuthNavActions({ onHero }: { onHero: boolean }) {
       >
         {session.user?.username}
       </span>
+      <Link href="/api-keys" className={buttonClass} title="API keys">
+        <KeyRound className="size-3.5" />
+        <span className="hidden lg:inline">API keys</span>
+      </Link>
       <button
         type="button"
         className={buttonClass}
