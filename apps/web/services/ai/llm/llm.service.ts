@@ -2,7 +2,6 @@ import { env } from "@/lib/env";
 import { AppError } from "@/utils/errors";
 import { claudeClient } from "@/services/ai/advisor/claude-client";
 
-import { geminiClient } from "./gemini-client";
 import { logLlmCallFailure, logLlmCallSuccess } from "./llm-log-writer";
 import type {
   AiProvider,
@@ -18,42 +17,32 @@ export type {
   LlmCompleteResponse,
 };
 
+/** The app only uses Claude for text generation. */
+const TEXT_PROVIDER: AiProvider = "claude";
+
 export function isProviderConfigured(provider: AiProvider): boolean {
-  if (provider === "gemini") return Boolean(env.ai.geminiApiKey());
-  return Boolean(env.ai.anthropicApiKey());
+  return provider === TEXT_PROVIDER && Boolean(env.ai.anthropicApiKey());
 }
 
+/**
+ * Always Claude. A requested provider (old clients may still send `ai_provider`)
+ * and the AI_PROVIDER env var are ignored.
+ */
 export function resolveProvider(requested?: AiProvider): AiProvider {
-  if (requested && isProviderConfigured(requested)) {
-    return requested;
-  }
-
-  const envDefault = process.env.AI_PROVIDER?.toLowerCase();
-  if (envDefault === "gemini" && isProviderConfigured("gemini")) {
-    return "gemini";
-  }
-  if (envDefault === "claude" && isProviderConfigured("claude")) {
-    return "claude";
-  }
-
-  if (isProviderConfigured("claude")) return "claude";
-  if (isProviderConfigured("gemini")) return "gemini";
-
-  return requested ?? "claude";
+  void requested;
+  return TEXT_PROVIDER;
 }
 
 export function getAiProviderAvailability(): AiProviderAvailability {
-  const claude = isProviderConfigured("claude");
-  const gemini = isProviderConfigured("gemini");
   const stt_cloud = env.ai.hasCloudStt();
   const stt_local =
     process.env.LOCAL_STT_ENABLED !== "false" && !env.isVercel();
   return {
-    claude,
-    gemini,
+    claude: isProviderConfigured(TEXT_PROVIDER),
+    gemini: false,
     stt_cloud,
     stt_local,
-    default: resolveProvider(),
+    default: TEXT_PROVIDER,
   };
 }
 
@@ -64,9 +53,7 @@ export async function llmComplete(
   const startedAt = new Date();
 
   if (!isProviderConfigured(provider)) {
-    const keyName =
-      provider === "gemini" ? "GEMINI_API_KEY" : "ANTHROPIC_API_KEY";
-    const err = new AppError(`${keyName} is not configured`, {
+    const err = new AppError("ANTHROPIC_API_KEY is not configured", {
       code: "LLM_NOT_CONFIGURED",
       statusCode: 503,
     });
@@ -75,29 +62,20 @@ export async function llmComplete(
   }
 
   try {
-    let response: LlmCompleteResponse;
+    const result = await claudeClient.complete({
+      system: request.system,
+      user: request.user,
+      model: request.model,
+      maxTokens: request.maxTokens,
+      temperature: request.temperature,
+    });
 
-    if (provider === "gemini") {
-      response = await geminiClient.complete({
-        ...request,
-        provider: "gemini",
-      });
-    } else {
-      const result = await claudeClient.complete({
-        system: request.system,
-        user: request.user,
-        model: request.model,
-        maxTokens: request.maxTokens,
-        temperature: request.temperature,
-      });
-
-      response = {
-        text: result.text,
-        model: result.model,
-        provider: "claude",
-        usage: result.usage,
-      };
-    }
+    const response: LlmCompleteResponse = {
+      text: result.text,
+      model: result.model,
+      provider: "claude",
+      usage: result.usage,
+    };
 
     await logLlmCallSuccess(request, response, startedAt, provider);
     return response;

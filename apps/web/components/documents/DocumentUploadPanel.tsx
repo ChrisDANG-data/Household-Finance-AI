@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 
-import { AiProviderSwitch } from "@/components/ai/AiProviderSwitch";
 import { ObligationReviewDialog } from "@/components/documents/ObligationReviewDialog";
 import { useAiProvider } from "@/hooks/use-ai-provider";
 import { Button } from "@/components/ui/button";

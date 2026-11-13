@@ -68,6 +68,8 @@ model User {
   id           String   @id @default(cuid())
   username     String   @unique
   passwordHash String   @map("password_hash")
+  /// SHA-256 of the one-time recovery code (null for accounts created before recovery codes)
+  recoveryCodeHash String? @map("recovery_code_hash")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

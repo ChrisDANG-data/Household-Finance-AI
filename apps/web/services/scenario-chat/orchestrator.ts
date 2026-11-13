@@ -44,6 +44,11 @@ function buildInterpretation(
 ): string {
   switch (intent) {
     case "affordability_check":
+      if (params.amount && params.modification === "add_recurring_expense") {
+        return `Affordability check: recurring expense of ${params.amount} CAD per month${
+          params.target_month ? ` starting ${params.target_month}` : ""
+        } was simulated against your forecast.`;
+      }
       return params.amount
         ? `Affordability check: one-time expense of ${params.amount} CAD${
             params.target_month ? ` in ${params.target_month}` : ""

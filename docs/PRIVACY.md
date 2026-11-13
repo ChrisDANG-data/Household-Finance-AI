@@ -38,6 +38,7 @@ We do **not** sell household data. LLM providers process text only when you use 
 |---------|----------|
 | **Household login** | On Vercel (and when `AUTH_ENABLED=true`), pages and APIs require a signed session cookie except `/`, `/login`, and auth/health endpoints. |
 | **User accounts** | Usernames and **password hashes** (scrypt) live in Postgres `users` table — never plaintext passwords. |
+| **Password recovery** | Passwords cannot be looked up or emailed. Each account gets a one-time **recovery code** at sign-up (only a SHA-256 hash is stored); it is the only way to reset a forgotten password and is replaced after each use. Disabled for shared demo accounts (`AUTH_SHARED_ACCOUNTS`). |
 | **Agent API keys** | Per-user keys for AI agents (`/api/agent/*`). Only a SHA-256 hash is stored; each key reaches only its owner's data and can be revoked on `/api-keys`. |
 | **Automation webhooks** | n8n/Telegram routes require `Authorization: Bearer <AUTOMATION_WEBHOOK_TOKEN>`. In production, the token is **required** (fail closed). |
 | **Plaid tokens** | Stored **encrypted at rest** when `TOKEN_ENCRYPTION_KEY` is set (required on Vercel). Never returned to the browser. |
@@ -51,7 +52,8 @@ Local development: auth and encryption are **off by default** unless you set `AU
 
 When you use scenario chat, RAG, document extraction, or voice:
 
-- **Anthropic** (Claude), **Google** (Gemini), and/or **OpenAI** (embeddings, Whisper) may receive **portions of ledger text, document chunks, or your question**.
+- **Anthropic** (Claude, for all AI answers and document extraction) and **OpenAI** (embeddings, Whisper voice transcription) may receive **portions of ledger text, document chunks, or your question**.
+- **Google** (Gemini) is not used unless the operator opts in to the voice fallback with `STT_GEMINI_FALLBACK=true`.
 - **Money calculations** remain in deterministic code — the LLM explains and retrieves; it does not write ledger truth.
 
 **Production next step (Tier 2):** PII minimization / tokenization before LLM calls (e.g. Presidio-style redaction).
