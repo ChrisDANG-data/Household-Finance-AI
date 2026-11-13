@@ -39,6 +39,8 @@ export async function POST(request: Request) {
     const response = jsonSuccess({
       authenticated: true,
       user: { id: user.id, username: user.username },
+      // Shown to the user once so they can reset a forgotten password.
+      recovery_code: user.recoveryCode,
     });
     response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions());
     return response;

@@ -12,7 +12,7 @@ type SttProvider = "gemini" | "whisper" | "local";
 
 function parseProvider(raw: FormDataEntryValue | null): SttProvider {
   if (raw === "whisper" || raw === "openai" || raw === "cloud") return "whisper";
-  if (raw === "gemini") return "gemini";
+  // "gemini" is no longer selectable — it falls through to the default below.
   if (raw === "local") {
     if (env.isVercel()) {
       if (env.ai.whisperApiKey()?.trim()) return "whisper";

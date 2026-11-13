@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { GoogleVoiceAskButton } from "@/components/ai/GoogleVoiceAskButton";
-import { AiProviderSwitch } from "@/components/ai/AiProviderSwitch";
 import { useAiProvider } from "@/hooks/use-ai-provider";
 import { DEMO_FINANCIAL_CONTEXT } from "@/lib/demo-financial-context";
 import type { SerializedScenarioChatResponse } from "@/lib/serialize-scenario-response";
@@ -227,7 +226,6 @@ export default function ScenarioChatPage() {
               Financial advisor
             </h1>
           </div>
-          <AiProviderSwitch compact />
           <Link
             href="/documents"
             className="flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors border border-border"

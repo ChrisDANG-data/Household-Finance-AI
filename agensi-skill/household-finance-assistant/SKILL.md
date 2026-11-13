@@ -23,8 +23,8 @@ Be upfront with the user about this:
 - Every call goes to `HFI_BASE_URL` (default
   `https://household-financial-web.vercel.app`) over HTTPS with the user's API
   key in the `Authorization` header. No other host is contacted.
-- The question text is sent to that service, which may pass it to an AI
-  provider (Anthropic, OpenAI or Google) to write the explanation.
+- The question text is sent to that service, which may pass it to Anthropic
+  (Claude) to write the explanation and to OpenAI to search uploaded documents.
 - Nothing is sent until the user asks a finance question or asks to add an entry.
 
 ## Setup (one time)

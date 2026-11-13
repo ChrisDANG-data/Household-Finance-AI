@@ -7,6 +7,7 @@ export function isPublicPath(pathname: string): boolean {
   if (pathname === "/login") return true;
   if (pathname.startsWith("/api/auth/login")) return true;
   if (pathname.startsWith("/api/auth/register")) return true;
+  if (pathname === "/api/auth/reset-password") return true;
   if (pathname === "/api/auth/session") return true;
   if (pathname === "/api/auth/logout") return true;
   if (pathname === "/api/health") return true;
