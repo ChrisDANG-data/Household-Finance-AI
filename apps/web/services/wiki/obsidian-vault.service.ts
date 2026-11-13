@@ -146,8 +146,10 @@ export async function buildVaultZipBuffer(files: WikiFile[]): Promise<Buffer> {
   });
 }
 
-export async function syncObsidianVault(): Promise<ObsidianSyncResult> {
-  const compiled = await compileWikiVault();
+export async function syncObsidianVault(
+  userId?: string,
+): Promise<ObsidianSyncResult> {
+  const compiled = await compileWikiVault(userId);
   const vaultPath = env.obsidian.vaultPath();
 
   if (!vaultPath) {
@@ -189,11 +191,11 @@ export async function syncObsidianVault(): Promise<ObsidianSyncResult> {
   }
 }
 
-export async function exportObsidianVaultZip(): Promise<{
+export async function exportObsidianVaultZip(userId?: string): Promise<{
   buffer: Buffer;
   compiled: WikiCompileResult;
 }> {
-  const compiled = await compileWikiVault();
+  const compiled = await compileWikiVault(userId);
   const buffer = await buildVaultZipBuffer(compiled.files);
   return { buffer, compiled };
 }

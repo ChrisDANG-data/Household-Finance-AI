@@ -45,6 +45,10 @@ AUTH_ALLOW_REGISTRATION=true
 
 Without `AUTH_SECRET`, login API calls fail even when the UI appears.
 
+## Agent API (per-user API keys)
+
+AI agents use `/api/agent/*` with a per-user key (`Authorization: Bearer hfi_…`) and a daily AI request limit. Setup, deploy order and how to turn access off: **[AGENT_API.md](./AGENT_API.md)**.
+
 ## Document file storage (Vercel Blob)
 
 Uploaded PDFs/images are stored in **object storage**; Postgres holds metadata, extracted text, and embeddings only.

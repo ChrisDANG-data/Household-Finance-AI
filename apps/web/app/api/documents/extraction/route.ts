@@ -5,6 +5,7 @@ import {
   type ExtractedObligation,
 } from "@/services/document-intelligence/extraction/document-extraction.service";
 import { documentRepository } from "@/services/document-intelligence/document.repository";
+import { aiUsageService } from "@/services/usage/ai-usage.service";
 import { AppError } from "@/utils/errors";
 
 export const runtime = "nodejs";
@@ -62,6 +63,9 @@ export async function POST(request: Request) {
         message: `Saved ${savedCount} obligation(s) to your ledger.`,
       });
     }
+
+    // Cost control — AI extraction counts against the user's daily AI limit.
+    await aiUsageService.consume(userId);
 
     const payload = await documentExtractionService.extract(body.documentId, {
       provider: body.ai_provider,

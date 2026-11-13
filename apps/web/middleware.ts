@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import {
+  isAgentApiPath,
   isAuthEnabled,
   isAutomationApiPath,
   isPublicPath,
@@ -33,6 +34,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Agent routes verify the per-user API key themselves (needs a DB lookup).
+  if (isAgentApiPath(pathname)) {
     return NextResponse.next();
   }
 

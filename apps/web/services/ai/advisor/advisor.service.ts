@@ -133,7 +133,10 @@ export function buildDeterministicAdvice(
         : ["No stress months detected in the forecast horizon."],
     recommendations,
     explanation: [
-      ...risk.insights,
+      // Insights are stored without end punctuation — close each one so they read as sentences.
+      ...risk.insights.map((insight) =>
+        /[.!?]$/.test(insight.trim()) ? insight.trim() : `${insight.trim()}.`,
+      ),
       `Average monthly savings (simulated): ${risk.metrics.average_monthly_savings} CAD.`,
       `Worst month cash flow: ${risk.metrics.worst_month_cash_flow} CAD.`,
     ].join(" "),

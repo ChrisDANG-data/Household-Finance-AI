@@ -2,6 +2,7 @@ import { assertMatchingUserId, resolveRequestUserId } from "@/lib/auth/request-u
 import { handleScenarioMessage } from "@/services/scenario-chat";
 import { financialStateEngine } from "@/services/financial-state";
 import { financialStatePersistence } from "@/services/financial-state/financial-state.persistence";
+import { aiUsageService } from "@/services/usage/ai-usage.service";
 import type { RawFinancialEvent } from "@/types/financial-state";
 import type { FinancialState } from "@/services/financial-state/state.types";
 import { jsonError, jsonSuccess } from "@/utils/api-response";
@@ -99,6 +100,9 @@ export async function POST(request: Request) {
         statusCode: 400,
       });
     }
+
+    // Cost control — count this request against the user's daily AI limit.
+    await aiUsageService.consume(userId);
 
     const wantsStream =
       body.stream === true ||
