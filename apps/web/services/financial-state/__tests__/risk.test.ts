@@ -77,6 +77,44 @@ describe("Risk Engine — deterministic risk signals", () => {
     expect(warningIds).toContain(BASIC_SCENARIO_EVENT_IDS.renovation);
   });
 
+  it("does not flag low liquidity for a zero balance when every month is positive", () => {
+    const positive = timeline.map((month) => ({
+      ...month,
+      income_total: 5000,
+      expense_total: 3500,
+      investment_total: 0,
+      net_cash_flow: 1500,
+    }));
+
+    const report = computeRiskSignals(positive, { current_cash: 0 });
+
+    expect(report.insights.some((i) => i.includes("Low liquidity"))).toBe(false);
+    expect(report.risk_level).toBe("low");
+  });
+
+  it("still flags zero runway for a zero balance with no positive cash flow", () => {
+    const flat = timeline.map((month) => ({
+      ...month,
+      income_total: 0,
+      expense_total: 0,
+      investment_total: 0,
+      net_cash_flow: 0,
+    }));
+    const burning = flat.map((month) => ({
+      ...month,
+      expense_total: 500,
+      net_cash_flow: -500,
+    }));
+
+    for (const sample of [flat, burning]) {
+      const report = computeRiskSignals(sample, { current_cash: 0 });
+      expect(report.risk_level).toBe("high");
+      expect(
+        report.insights.some((i) => i.includes("runway is approximately 0")),
+      ).toBe(true);
+    }
+  });
+
   it("is deterministic across repeated runs", () => {
     const ctx = { current_cash: state.current_cash };
     const a = computeRiskSignals(timeline, ctx);

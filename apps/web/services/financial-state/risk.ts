@@ -166,7 +166,11 @@ function computeRunwayMonths(
   currentCash: number,
   timeline: FinancialTimelineState[],
 ): number | null {
-  if (currentCash <= 0) return 0;
+  // No cash and nothing coming in next month → already out of runway.
+  // A zero balance with positive cash flow is NOT a liquidity problem: the balance
+  // only grows, so fall through and let the simulation below decide.
+  const firstFlow = timeline[0]?.net_cash_flow ?? 0;
+  if (currentCash < 0 || (currentCash === 0 && firstFlow <= 0)) return 0;
   let cash = currentCash;
   let months = 0;
   for (const month of timeline) {

@@ -180,7 +180,7 @@ export function applyScenarioToState(
   params: ScenarioParameters,
   intent: ScenarioIntent,
 ): FinancialState | null {
-  let state = cloneFinancialState(baseState);
+  const state = cloneFinancialState(baseState);
 
   if (intent === "explanation_request") {
     return null;
