@@ -7,6 +7,11 @@ import {
 import { jsonSuccess } from "@/utils/api-response";
 import { AppError } from "@/utils/errors";
 import { userAuthService } from "@/services/auth/user-auth.service";
+import {
+  AUTH_LIMITS,
+  clientIp,
+  rateLimitService,
+} from "@/services/security/rate-limit.service";
 import { financialStatePersistence } from "@/services/financial-state/financial-state.persistence";
 
 function setSessionCookie(user: { id: string; username: string }) {
@@ -35,6 +40,10 @@ export async function POST(request: Request) {
         statusCode: 400,
       });
     }
+
+    // Slow down password guessing (per network address and per username).
+    await rateLimitService.hit("login:ip", clientIp(request), AUTH_LIMITS.loginPerIp);
+    await rateLimitService.hit("login:user", username, AUTH_LIMITS.loginPerUsername);
 
     const user = await userAuthService.authenticate(username, password);
     if (!user) {

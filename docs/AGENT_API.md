@@ -11,6 +11,8 @@ This is what the Agensi skill in [`agensi-skill/`](../agensi-skill/) talks to.
 | Key management | `/api-keys` page, `GET/POST /api/auth/api-keys`, `DELETE /api/auth/api-keys/[id]` | Requires a normal signed-in session. |
 | Agent routes | `/api/agent/me`, `/question`, `/summary`, `/ledger-event` | `Authorization: Bearer hfi_…`. The user id always comes from the key; `user_id` in the request is ignored. |
 | Daily AI limit | `services/usage/ai-usage.service.ts`, table `ai_usage_daily` | Counts per user per UTC day. Over the limit → HTTP 429 `RATE_LIMITED`. |
+| Service-wide AI cap | same service, reserved counter `__global__` | All users together: 300/day by default (`AI_GLOBAL_DAILY_LIMIT`, `0` = off). Stops many accounts adding up to a large bill. |
+| Sign-in throttling | `services/security/rate-limit.service.ts`, table `rate_limit_buckets` | Login and password reset: 10 per username and 30 per address every 15 minutes. Sign-up: 10 per address and 200 in total per day. |
 
 The limit applies to `/api/agent/question`, web scenario chat (`/api/scenario-chat`),
 and document extraction previews. It does **not** yet cover voice transcription
@@ -28,15 +30,16 @@ Order matters — create the tables **before** the new code goes live.
    npm run db:push
    ```
 
-   This only adds two new tables (`api_keys`, `ai_usage_daily`). It does not change existing tables.
+   This adds three tables (`api_keys`, `ai_usage_daily`, `rate_limit_buckets`) and one nullable column (`users.recovery_code_hash`). It does not change existing data.
 
 2. Optional, in Vercel → Settings → Environment Variables:
 
    ```env
    AI_DAILY_LIMIT=20
+   AI_GLOBAL_DAILY_LIMIT=300
    ```
 
-   Unset = 20 per day when login is enabled (Vercel), unlimited in local dev. `0` = no limit.
+   Unset = 20 per user and 300 across all users per day when login is enabled (Vercel); unlimited in local dev. `0` = no limit.
 
 3. Push to `main` so Vercel redeploys.
 
@@ -53,7 +56,7 @@ with a server warning), but creating API keys fails until the tables exist.
 
 - **One key:** the user revokes it on `/api-keys`, or set `revoked_at` on the row in `api_keys`.
 - **One user:** revoke all their rows in `api_keys`.
-- **Everyone:** set `AI_DAILY_LIMIT=1` (or remove `ANTHROPIC_API_KEY`) in Vercel and redeploy.
+- **Everyone:** set `AI_GLOBAL_DAILY_LIMIT=1` (or remove `ANTHROPIC_API_KEY`) in Vercel and redeploy.
 
 ## Notes
 

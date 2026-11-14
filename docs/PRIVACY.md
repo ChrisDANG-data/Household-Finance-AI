@@ -39,6 +39,7 @@ We do **not** sell household data. LLM providers process text only when you use 
 | **Household login** | On Vercel (and when `AUTH_ENABLED=true`), pages and APIs require a signed session cookie except `/`, `/login`, and auth/health endpoints. |
 | **User accounts** | Usernames and **password hashes** (scrypt) live in Postgres `users` table — never plaintext passwords. |
 | **Password recovery** | Passwords cannot be looked up or emailed. Each account gets a one-time **recovery code** at sign-up (only a SHA-256 hash is stored); it is the only way to reset a forgotten password and is replaced after each use. Disabled for shared demo accounts (`AUTH_SHARED_ACCOUNTS`). |
+| **Abuse limits** | Sign-in, password-reset and sign-up attempts are rate limited per username and per network address. AI requests are capped per user per day and across the whole service. |
 | **Agent API keys** | Per-user keys for AI agents (`/api/agent/*`). Only a SHA-256 hash is stored; each key reaches only its owner's data and can be revoked on `/api-keys`. |
 | **Automation webhooks** | n8n/Telegram routes require `Authorization: Bearer <AUTOMATION_WEBHOOK_TOKEN>`. In production, the token is **required** (fail closed). |
 | **Plaid tokens** | Stored **encrypted at rest** when `TOKEN_ENCRYPTION_KEY` is set (required on Vercel). Never returned to the browser. |
@@ -62,14 +63,16 @@ When you use scenario chat, RAG, document extraction, or voice:
 
 ## Retention & deletion
 
-| Item | Current MVP | Planned |
-|------|-------------|---------|
-| Financial events | Manual delete via ledger API | Household wipe |
-| Documents | Persists until manual DB/blob cleanup | Delete API (file + chunks + embeddings) |
-| Plaid link | Persists until item removed | Disconnect + revoke via Plaid |
+| Item | Current behaviour | Planned |
+|------|-------------------|---------|
+| **Whole account** | The user can delete it on **Account & API keys → Delete account** (password required). Removes ledger events, obligations, balances, documents (rows, search chunks and stored files), Plaid links (revoked at Plaid), API keys, usage counters and the user record. | — |
+| Financial events | Manual delete via ledger UI/API | — |
+| Single documents | Persist until the account is deleted | Per-document delete |
+| Plaid link | Persists until the account is deleted | Disconnect button |
+| Sign-in attempt counters | Hashed keys only (no raw IP addresses or usernames); old windows are cleared automatically | — |
 | LLM dev logs | Optional `logs/llm-calls.jsonl` locally | Off in production by default |
 
-To remove data today: delete rows in Neon (events, documents), remove blobs in Vercel Storage, revoke Plaid item in Plaid dashboard, and rotate `AUTOMATION_WEBHOOK_TOKEN` if exposed.
+Shared demo accounts (`AUTH_SHARED_ACCOUNTS`) cannot be deleted by their users. If file or Plaid cleanup fails during deletion, the account is still removed and the failure is logged for the operator to clean up by hand.
 
 ---
 
