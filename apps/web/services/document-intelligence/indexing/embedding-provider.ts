@@ -19,7 +19,7 @@ function explicitProvider(): "" | "openai" | "local" {
 }
 
 /** Vercel serverless cannot load onnxruntime for @xenova/transformers. */
-export function useOpenAiEmbeddings(): boolean {
+export function shouldUseOpenAiEmbeddings(): boolean {
   const explicit = explicitProvider();
   if (explicit === "openai") return true;
   if (explicit === "local") return false;
@@ -28,11 +28,11 @@ export function useOpenAiEmbeddings(): boolean {
 }
 
 export function embeddingDimensions(): number {
-  return useOpenAiEmbeddings() ? OPENAI_EMBEDDING_DIMENSIONS : LOCAL_DIMENSIONS;
+  return shouldUseOpenAiEmbeddings() ? OPENAI_EMBEDDING_DIMENSIONS : LOCAL_DIMENSIONS;
 }
 
 export async function embedText(text: string): Promise<number[]> {
-  if (useOpenAiEmbeddings()) {
+  if (shouldUseOpenAiEmbeddings()) {
     return embedTextOpenAi(text);
   }
   try {
@@ -46,7 +46,7 @@ export async function embedText(text: string): Promise<number[]> {
 }
 
 export async function embedBatch(texts: string[]): Promise<number[][]> {
-  if (useOpenAiEmbeddings()) {
+  if (shouldUseOpenAiEmbeddings()) {
     return embedBatchOpenAi(texts);
   }
   try {
