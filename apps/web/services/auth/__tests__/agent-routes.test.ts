@@ -7,11 +7,16 @@ const mocks = vi.hoisted(() => ({
   },
   question: vi.fn(),
   ledger: vi.fn(),
+  isEmpty: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({ prisma: mocks.db }));
 vi.mock("@/services/automation/financial-question.service", () => ({
   handleAutomationFinancialQuestion: mocks.question,
+}));
+vi.mock("@/services/financial-state/empty-account", () => ({
+  EMPTY_ACCOUNT_MESSAGE: "no data yet",
+  isAccountEmpty: mocks.isEmpty,
 }));
 vi.mock("@/services/automation/ledger-event.service", () => ({
   ledgerEventAutomationService: { handle: mocks.ledger },
@@ -48,6 +53,7 @@ describe("agent API routes", () => {
     mocks.db.aiUsageDaily.upsert.mockResolvedValue({ count: 1 });
     mocks.db.aiUsageDaily.findUnique.mockResolvedValue({ count: 1 });
     mocks.question.mockResolvedValue({ reply: "ok", route: "ledger" });
+    mocks.isEmpty.mockResolvedValue(false);
     mocks.ledger.mockResolvedValue({ status: "preview", reply: "Save?" });
   });
 
@@ -92,6 +98,20 @@ describe("agent API routes", () => {
     expect(response.status).toBe(429);
     expect(payload.error.code).toBe("RATE_LIMITED");
     expect(mocks.question).not.toHaveBeenCalled();
+  });
+
+  it("tells an empty account to add data, without spending an AI request", async () => {
+    mocks.isEmpty.mockResolvedValue(true);
+
+    const response = await questionPost(post("/api/agent/question", { message: "hi" }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.data.reply).toBe("no data yet");
+    expect(payload.data.route).toBe("empty_account");
+    expect(mocks.isEmpty).toHaveBeenCalledWith("owner_1");
+    expect(mocks.question).not.toHaveBeenCalled();
+    expect(mocks.db.aiUsageDaily.upsert).not.toHaveBeenCalled();
   });
 
   it("validates the question before spending quota", async () => {

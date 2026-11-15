@@ -428,6 +428,22 @@ export function LoginForm({
           </p>
         ) : null}
 
+        {mode === "register" ? (
+          <p className={cn("mt-3", noteClass)}>
+            This is a demo service with no uptime guarantee. Don’t enter real
+            account numbers or upload documents you wouldn’t want stored on a
+            demo. You can delete your account and data at any time.{" "}
+            <a
+              className={linkClass}
+              href="https://github.com/ChrisDANG-data/Household-Finance-AI/blob/main/docs/PRIVACY.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              How your data is handled
+            </a>
+          </p>
+        ) : null}
+
         {error ? (
           <p className={cn("mt-4 text-sm", isHero ? "text-red-200" : "text-destructive")} role="alert">
             {error}

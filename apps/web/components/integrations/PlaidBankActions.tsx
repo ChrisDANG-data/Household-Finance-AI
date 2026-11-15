@@ -109,6 +109,14 @@ export function PlaidBankActions({ onLinked, refreshKey = 0 }: PlaidBankActionsP
             : `Bank linked ${syncLabel} · sync to refresh`}
         </span>
       )}
+      {configured && status?.plaid_environment === "sandbox" && (
+        <span
+          className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300"
+          title="Bank linking uses Plaid's sandbox. It connects to test banks with sample balances, not your real accounts."
+        >
+          Test mode · sample bank data
+        </span>
+      )}
       {!connected && configured && (
         <span className="text-muted-foreground">No bank linked</span>
       )}

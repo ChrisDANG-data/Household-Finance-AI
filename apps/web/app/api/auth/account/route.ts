@@ -4,11 +4,19 @@ import {
   SESSION_COOKIE_NAME,
 } from "@/lib/auth/session";
 import { accountDeletionService } from "@/services/auth/account-deletion.service";
+import { isAccountEmpty } from "@/services/financial-state/empty-account";
 import { jsonSuccess } from "@/utils/api-response";
 import { AppError } from "@/utils/errors";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+/** GET — small account summary for the UI (is there any data yet?). */
+export async function GET() {
+  return withAuthenticatedHandler(async (userId) => {
+    return jsonSuccess({ empty_account: await isAccountEmpty(userId) });
+  });
+}
 
 /**
  * DELETE — permanently delete the signed-in user's account and all their data.

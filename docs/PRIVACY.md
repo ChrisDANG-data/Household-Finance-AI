@@ -39,6 +39,7 @@ We do **not** sell household data. LLM providers process text only when you use 
 | **Household login** | On Vercel (and when `AUTH_ENABLED=true`), pages and APIs require a signed session cookie except `/`, `/login`, and auth/health endpoints. |
 | **User accounts** | Usernames and **password hashes** (scrypt) live in Postgres `users` table — never plaintext passwords. |
 | **Password recovery** | Passwords cannot be looked up or emailed. Each account gets a one-time **recovery code** at sign-up (only a SHA-256 hash is stored); it is the only way to reset a forgotten password and is replaced after each use. Disabled for shared demo accounts (`AUTH_SHARED_ACCOUNTS`). |
+| **Sessions** | A session stops working as soon as its account is deleted or its password is changed or reset — not only when the 7-day cookie expires. Users can change their password on **Account & API keys**. |
 | **Abuse limits** | Sign-in, password-reset and sign-up attempts are rate limited per username and per network address. AI requests are capped per user per day and across the whole service. |
 | **Agent API keys** | Per-user keys for AI agents (`/api/agent/*`). Only a SHA-256 hash is stored; each key reaches only its owner's data and can be revoked on `/api-keys`. |
 | **Automation webhooks** | n8n/Telegram routes require `Authorization: Bearer <AUTOMATION_WEBHOOK_TOKEN>`. In production, the token is **required** (fail closed). |

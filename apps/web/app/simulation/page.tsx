@@ -1,4 +1,5 @@
 import { EngineModuleLayout } from "@/components/EngineModuleLayout";
+import { EmptyAccountNotice } from "@/components/financial/EmptyAccountNotice";
 import { ForecastSimulator } from "@/components/simulation/ForecastSimulator";
 
 export default function SimulationEnginePage() {
@@ -8,6 +9,7 @@ export default function SimulationEnginePage() {
       title="Forecast Simulation"
       subtitle="Deterministic cash-flow projection, what-if scenarios, and AI Q&A over your financial state."
     >
+      <EmptyAccountNotice />
       <ForecastSimulator />
     </EngineModuleLayout>
   );

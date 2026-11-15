@@ -1,6 +1,8 @@
 import { withAuthenticatedHandler } from "@/lib/api/authenticated-handler";
 import { jsonSuccess } from "@/utils/api-response";
 import { documentRepository } from "@/services/document-intelligence/document.repository";
+import { assertDocumentQuota } from "@/services/document-intelligence/document-quota";
+import { aiUsageService } from "@/services/usage/ai-usage.service";
 import { AppError } from "@/utils/errors";
 import type { DocumentMimeType } from "@/types/documents";
 import { resolveDocumentMimeType } from "@/utils/file";
@@ -42,6 +44,11 @@ export async function POST(request: Request) {
         },
       );
     }
+
+    // Storage + cost control: cap documents per account, and count the AI
+    // extraction/indexing an upload triggers against the daily AI limit.
+    await assertDocumentQuota(userId);
+    await aiUsageService.consume(userId);
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const result = await documentRepository.upload(

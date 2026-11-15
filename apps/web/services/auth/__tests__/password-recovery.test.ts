@@ -119,6 +119,58 @@ describe("password recovery", () => {
     expect(db.user.findUnique).not.toHaveBeenCalled();
   });
 
+  it("changes the password and signs out other sessions", async () => {
+    db.user.findUnique.mockResolvedValue({
+      id: "user_1",
+      username: "alice",
+      passwordHash: hashPassword("password123"),
+    });
+
+    await expect(
+      userAuthService.changePassword("user_1", "wrong-password", "new-password-1"),
+    ).rejects.toMatchObject({ statusCode: 401 });
+    await expect(
+      userAuthService.changePassword("user_1", "password123", "short"),
+    ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    expect(db.user.update).not.toHaveBeenCalled();
+
+    const before = Date.now();
+    await userAuthService.changePassword("user_1", "password123", "new-password-1");
+
+    const data = db.user.update.mock.calls[0][0].data;
+    expect(verifyPassword("new-password-1", data.passwordHash)).toBe(true);
+    expect(data.sessionsValidAfter).toBeInstanceOf(Date);
+    // Rounded down to the second, so the fresh session issued next stays valid.
+    expect(data.sessionsValidAfter.getTime() % 1000).toBe(0);
+    expect(data.sessionsValidAfter.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(data.sessionsValidAfter.getTime()).toBeGreaterThanOrEqual(
+      Math.floor(before / 1000) * 1000,
+    );
+  });
+
+  it("does not let anyone change the shared demo account's password", async () => {
+    db.user.findUnique.mockResolvedValue({
+      id: "demo",
+      username: "householdfinance",
+      passwordHash: hashPassword("householdfinanceai"),
+    });
+    await expect(
+      userAuthService.changePassword("demo", "householdfinanceai", "new-password-1"),
+    ).rejects.toMatchObject({ statusCode: 403 });
+    expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it("signs out existing sessions when the password is reset", async () => {
+    const code = generateRecoveryCode();
+    db.user.findUnique.mockResolvedValue({
+      id: "user_1",
+      username: "alice",
+      recoveryCodeHash: hashRecoveryCode(code),
+    });
+    await userAuthService.resetPasswordWithRecoveryCode("alice", code, "new-password-1");
+    expect(db.user.update.mock.calls[0][0].data.sessionsValidAfter).toBeInstanceOf(Date);
+  });
+
   it("needs the current password to issue a new code", async () => {
     db.user.findUnique.mockResolvedValue({
       id: "user_1",

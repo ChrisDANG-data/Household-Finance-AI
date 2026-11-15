@@ -15,8 +15,12 @@ This is what the Agensi skill in [`agensi-skill/`](../agensi-skill/) talks to.
 | Sign-in throttling | `services/security/rate-limit.service.ts`, table `rate_limit_buckets` | Login and password reset: 6 per username and 30 per address every 15 minutes. Sign-up: 10 per address and 200 in total per day. |
 
 The limit applies to `/api/agent/question`, web scenario chat (`/api/scenario-chat`),
-and document extraction previews. It does **not** yet cover voice transcription
-(`/api/stt/transcribe`) or embeddings created on upload.
+document uploads and re-extraction, extraction previews, and cloud voice transcription
+(`/api/stt/transcribe`). A spoken question therefore counts twice: once to transcribe it
+and once to answer it.
+
+Each account can also keep at most 20 documents (`MAX_DOCUMENTS_PER_USER`, `0` = off;
+unlimited in local dev).
 
 Request/response details: [`agensi-skill/household-finance-assistant/references/api.md`](../agensi-skill/household-finance-assistant/references/api.md).
 

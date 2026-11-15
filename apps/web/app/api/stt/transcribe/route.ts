@@ -1,4 +1,6 @@
+import { resolveRequestUserId } from "@/lib/auth/request-user";
 import { env } from "@/lib/env";
+import { aiUsageService } from "@/services/usage/ai-usage.service";
 import { transcribeWithFallback } from "@/services/ai/stt/transcribe-with-fallback";
 import { jsonError, jsonSuccess } from "@/utils/api-response";
 import { AppError, toAppError } from "@/utils/errors";
@@ -52,6 +54,13 @@ export async function POST(request: Request) {
         code: "VALIDATION_ERROR",
         statusCode: 400,
       });
+    }
+
+    // Cloud transcription is paid per minute — count it against the daily AI limit.
+    // Local transcription is free and is not counted.
+    if (provider !== "local") {
+      const userId = await resolveRequestUserId();
+      await aiUsageService.consume(userId);
     }
 
     const mimeType = file.type || "audio/webm";
