@@ -12,7 +12,7 @@ This is what the Agensi skill in [`agensi-skill/`](../agensi-skill/) talks to.
 | Agent routes | `/api/agent/me`, `/question`, `/summary`, `/ledger-event` | `Authorization: Bearer hfi_…`. The user id always comes from the key; `user_id` in the request is ignored. |
 | Daily AI limit | `services/usage/ai-usage.service.ts`, table `ai_usage_daily` | Counts per user per UTC day. Over the limit → HTTP 429 `RATE_LIMITED`. |
 | Service-wide AI cap | same service, reserved counter `__global__` | All users together: 300/day by default (`AI_GLOBAL_DAILY_LIMIT`, `0` = off). Stops many accounts adding up to a large bill. |
-| Sign-in throttling | `services/security/rate-limit.service.ts`, table `rate_limit_buckets` | Login and password reset: 10 per username and 30 per address every 15 minutes. Sign-up: 10 per address and 200 in total per day. |
+| Sign-in throttling | `services/security/rate-limit.service.ts`, table `rate_limit_buckets` | Login and password reset: 6 per username and 30 per address every 15 minutes. Sign-up: 10 per address and 200 in total per day. |
 
 The limit applies to `/api/agent/question`, web scenario chat (`/api/scenario-chat`),
 and document extraction previews. It does **not** yet cover voice transcription

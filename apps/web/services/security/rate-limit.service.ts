@@ -9,11 +9,11 @@ const DAY = 24 * 60 * MINUTE;
 /** Attempt limits for the sign-in pages. All attempts count, not only failures. */
 export const AUTH_LIMITS = {
   /** Password guesses against one username. */
-  loginPerUsername: { limit: 10, windowSeconds: 15 * MINUTE },
+  loginPerUsername: { limit: 6, windowSeconds: 15 * MINUTE },
   /** Sign-in attempts from one network address (any username). */
   loginPerIp: { limit: 30, windowSeconds: 15 * MINUTE },
   /** Recovery-code guesses against one username. */
-  resetPerUsername: { limit: 10, windowSeconds: 15 * MINUTE },
+  resetPerUsername: { limit: 6, windowSeconds: 15 * MINUTE },
   resetPerIp: { limit: 30, windowSeconds: 15 * MINUTE },
   /** New accounts from one network address per day. */
   signupPerIp: { limit: 10, windowSeconds: DAY },
