@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 
 import { env } from "@/lib/env";
 import { AppError } from "@/utils/errors";
@@ -54,4 +54,8 @@ export async function readDocumentFileFromBlob(storagePath: string): Promise<Buf
   }
 
   return Buffer.from(await response.arrayBuffer());
+}
+
+export async function deleteDocumentFileFromBlob(storagePath: string): Promise<void> {
+  await del(storagePath, { token: blobToken() });
 }

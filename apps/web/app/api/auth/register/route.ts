@@ -8,6 +8,11 @@ import {
 import { jsonSuccess } from "@/utils/api-response";
 import { AppError } from "@/utils/errors";
 import { userAuthService } from "@/services/auth/user-auth.service";
+import {
+  AUTH_LIMITS,
+  clientIp,
+  rateLimitService,
+} from "@/services/security/rate-limit.service";
 import { financialStatePersistence } from "@/services/financial-state/financial-state.persistence";
 
 export async function POST(request: Request) {
@@ -32,6 +37,10 @@ export async function POST(request: Request) {
         statusCode: 400,
       });
     }
+
+    // Limit mass account creation (per network address and across the service).
+    await rateLimitService.hit("signup:ip", clientIp(request), AUTH_LIMITS.signupPerIp);
+    await rateLimitService.hit("signup:all", "all", AUTH_LIMITS.signupGlobal);
 
     const user = await userAuthService.register(username, password);
     await financialStatePersistence.ensureState(user.id);

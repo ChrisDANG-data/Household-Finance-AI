@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { AppError } from "@/utils/errors";
@@ -56,4 +56,12 @@ export async function readDocumentFileFromLocal(
 ): Promise<Buffer> {
   const resolved = resolveLocalStoragePath(storagePath);
   return readFile(resolved);
+}
+
+/** Delete a locally stored upload. Refuses any path outside the upload folder. */
+export async function deleteDocumentFileFromLocal(storagePath: string): Promise<void> {
+  const resolved = path.resolve(storagePath);
+  const root = path.resolve(UPLOAD_ROOT) + path.sep;
+  if (!resolved.startsWith(root)) return;
+  await rm(resolved, { force: true });
 }

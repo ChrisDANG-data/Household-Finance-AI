@@ -2,11 +2,13 @@ import { env } from "@/lib/env";
 import { AppError } from "@/utils/errors";
 
 import {
+  deleteDocumentFileFromLocal,
   isRemoteStoragePath,
   readDocumentFileFromLocal,
   saveDocumentFileToLocal,
 } from "./local-document-storage";
 import {
+  deleteDocumentFileFromBlob,
   readDocumentFileFromBlob,
   saveDocumentFileToBlob,
 } from "./vercel-blob-document-storage";
@@ -65,6 +67,18 @@ export async function readDocumentFile(storagePath: string): Promise<Buffer> {
     return readDocumentFileFromBlob(storagePath);
   }
   return readDocumentFileFromLocal(storagePath);
+}
+
+/** Permanently remove a stored document file (local disk or Vercel Blob). */
+export async function deleteDocumentFile(storagePath: string): Promise<void> {
+  if (!storagePath || storagePath === "pending" || storagePath.startsWith("pending:")) {
+    return;
+  }
+  if (isRemoteStoragePath(storagePath)) {
+    await deleteDocumentFileFromBlob(storagePath);
+    return;
+  }
+  await deleteDocumentFileFromLocal(storagePath);
 }
 
 export { isRemoteStoragePath };

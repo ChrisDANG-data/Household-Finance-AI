@@ -11,8 +11,11 @@ vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
 import {
   DEFAULT_AI_DAILY_LIMIT,
+  DEFAULT_AI_GLOBAL_DAILY_LIMIT,
+  GLOBAL_USAGE_ID,
   aiUsageService,
   resolveAiDailyLimit,
+  resolveAiGlobalDailyLimit,
   utcDay,
 } from "@/services/usage/ai-usage.service";
 
@@ -26,6 +29,7 @@ describe("AI daily limit", () => {
     delete process.env.VERCEL;
     delete process.env.AUTH_ENABLED;
     delete process.env.AI_DAILY_LIMIT;
+    delete process.env.AI_GLOBAL_DAILY_LIMIT;
     vi.clearAllMocks();
   });
 
@@ -86,6 +90,50 @@ describe("AI daily limit", () => {
       code: "RATE_LIMITED",
       statusCode: 429,
     });
+  });
+
+  it("resolves the service-wide cap from env", () => {
+    expect(resolveAiGlobalDailyLimit()).toBeNull();
+
+    process.env.VERCEL = "1";
+    expect(resolveAiGlobalDailyLimit()).toBe(DEFAULT_AI_GLOBAL_DAILY_LIMIT);
+
+    process.env.AI_GLOBAL_DAILY_LIMIT = "50";
+    expect(resolveAiGlobalDailyLimit()).toBe(50);
+
+    process.env.AI_GLOBAL_DAILY_LIMIT = "0";
+    expect(resolveAiGlobalDailyLimit()).toBeNull();
+  });
+
+  it("stops everyone once the service-wide cap is reached", async () => {
+    process.env.AI_DAILY_LIMIT = "5";
+    process.env.AI_GLOBAL_DAILY_LIMIT = "100";
+    const counts: Record<string, number> = { user_1: 1, [GLOBAL_USAGE_ID]: 100 };
+    db.aiUsageDaily.upsert.mockImplementation(async ({ where }) => ({
+      count: counts[where.userId_day.userId],
+    }));
+
+    await expect(aiUsageService.consume("user_1", NOW)).resolves.toMatchObject({
+      remaining: 4,
+    });
+
+    counts[GLOBAL_USAGE_ID] = 101;
+    await expect(aiUsageService.consume("user_1", NOW)).rejects.toMatchObject({
+      code: "RATE_LIMITED",
+      statusCode: 429,
+      message: expect.stringContaining("daily AI capacity"),
+    });
+  });
+
+  it("does not count a user's over-limit request towards the service-wide cap", async () => {
+    process.env.AI_DAILY_LIMIT = "3";
+    process.env.AI_GLOBAL_DAILY_LIMIT = "100";
+    db.aiUsageDaily.upsert.mockResolvedValue({ count: 4 });
+
+    await expect(aiUsageService.consume("user_1", NOW)).rejects.toMatchObject({
+      statusCode: 429,
+    });
+    expect(db.aiUsageDaily.upsert).toHaveBeenCalledTimes(1);
   });
 
   it("keeps working (with a warning) before the table exists", async () => {

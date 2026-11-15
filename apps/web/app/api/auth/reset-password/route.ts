@@ -5,6 +5,11 @@ import {
   SESSION_COOKIE_NAME,
 } from "@/lib/auth/session";
 import { userAuthService } from "@/services/auth/user-auth.service";
+import {
+  AUTH_LIMITS,
+  clientIp,
+  rateLimitService,
+} from "@/services/security/rate-limit.service";
 import { financialStatePersistence } from "@/services/financial-state/financial-state.persistence";
 import { jsonSuccess } from "@/utils/api-response";
 import { AppError } from "@/utils/errors";
@@ -34,6 +39,10 @@ export async function POST(request: Request) {
         statusCode: 400,
       });
     }
+
+    // Slow down recovery-code guessing.
+    await rateLimitService.hit("reset:ip", clientIp(request), AUTH_LIMITS.resetPerIp);
+    await rateLimitService.hit("reset:user", username, AUTH_LIMITS.resetPerUsername);
 
     const user = await userAuthService.resetPasswordWithRecoveryCode(
       username,

@@ -207,6 +207,14 @@ export class PlaidApiService {
 
     return snapshot;
   }
+
+  /** Revoke a linked item at Plaid so its access_token stops working. */
+  async removeItem(accessToken: string): Promise<void> {
+    if (!accessToken.trim()) return;
+    await plaidPost<Record<string, unknown>>("/item/remove", {
+      access_token: accessToken,
+    });
+  }
 }
 
 export const plaidApiService = new PlaidApiService();
