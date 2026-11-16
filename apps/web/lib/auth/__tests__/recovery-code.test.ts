@@ -43,16 +43,17 @@ describe("recovery code", () => {
     expect(hash).not.toContain(normalizeRecoveryCode(code));
   });
 
-  it("treats the public demo login as a shared account by default", () => {
+  it("has no shared accounts unless AUTH_SHARED_ACCOUNTS lists them", () => {
     delete process.env.AUTH_SHARED_ACCOUNTS;
-    expect(isSharedAccount("HouseholdFinance")).toBe(true);
+    expect(isSharedAccount("shareddemo")).toBe(false);
     expect(isSharedAccount("alice")).toBe(false);
 
-    process.env.AUTH_SHARED_ACCOUNTS = "demo, guest";
-    expect(isSharedAccount("guest")).toBe(true);
-    expect(isSharedAccount("householdfinance")).toBe(false);
+    process.env.AUTH_SHARED_ACCOUNTS = "SharedDemo, guest";
+    expect(isSharedAccount("shareddemo")).toBe(true);
+    expect(isSharedAccount(" Guest ")).toBe(true);
+    expect(isSharedAccount("alice")).toBe(false);
 
     process.env.AUTH_SHARED_ACCOUNTS = "";
-    expect(isSharedAccount("householdfinance")).toBe(false);
+    expect(isSharedAccount("shareddemo")).toBe(false);
   });
 });

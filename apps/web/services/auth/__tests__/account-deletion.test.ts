@@ -68,13 +68,14 @@ describe("account deletion", () => {
   });
 
   it("refuses to delete the shared demo account", async () => {
+    process.env.AUTH_SHARED_ACCOUNTS = "shareddemo";
     db.user.findUnique.mockResolvedValue({
       id: "demo",
-      username: "householdfinance",
-      passwordHash: hashPassword("householdfinanceai"),
+      username: "shareddemo",
+      passwordHash: hashPassword("shared-demo-password"),
     });
     await expect(
-      accountDeletionService.deleteAccount("demo", "householdfinanceai"),
+      accountDeletionService.deleteAccount("demo", "shared-demo-password"),
     ).rejects.toMatchObject({ statusCode: 403 });
     expect(db.$transaction).not.toHaveBeenCalled();
   });

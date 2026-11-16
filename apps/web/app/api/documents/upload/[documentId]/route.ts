@@ -1,6 +1,7 @@
 import { withAuthenticatedHandler } from "@/lib/api/authenticated-handler";
 import { jsonSuccess } from "@/utils/api-response";
 import { documentRepository } from "@/services/document-intelligence/document.repository";
+import { aiUsageService } from "@/services/usage/ai-usage.service";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -25,6 +26,8 @@ export async function POST(
   return withAuthenticatedHandler(async (userId) => {
     const { documentId } = await context.params;
     await documentRepository.getById(documentId, userId);
+    // Re-running extraction calls AI again — count it against the daily limit.
+    await aiUsageService.consume(userId);
     const result = await documentRepository.runExtraction(documentId);
     return jsonSuccess({
       document: result.document,

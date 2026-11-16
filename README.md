@@ -10,7 +10,7 @@
 
 **Live app:** https://household-financial-web.vercel.app
 
-**Demo login:** `householdfinance` / `householdfinanceai`
+**Try it:** create a free account on the live app (demo service — don't enter real account numbers).
 
 **Slides:** [Google Slides](https://docs.google.com/presentation/d/1kIrrg-30TM1GRJpX7u-ojIKacxlEQRVO/view?usp=sharing)
 

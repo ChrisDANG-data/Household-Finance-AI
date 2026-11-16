@@ -1,5 +1,9 @@
 import { withAgentHandler } from "@/lib/auth/agent-auth";
 import { handleAutomationFinancialQuestion } from "@/services/automation/financial-question.service";
+import {
+  EMPTY_ACCOUNT_MESSAGE,
+  isAccountEmpty,
+} from "@/services/financial-state/empty-account";
 import { aiUsageService } from "@/services/usage/ai-usage.service";
 import { jsonSuccess } from "@/utils/api-response";
 import { AppError } from "@/utils/errors";
@@ -34,6 +38,15 @@ export async function POST(request: Request) {
         `message must be ${MAX_MESSAGE_LENGTH} characters or fewer`,
         { code: "VALIDATION_ERROR", statusCode: 400 },
       );
+    }
+
+    // Nothing to answer from yet — say so without spending an AI request.
+    if (await isAccountEmpty(userId)) {
+      return jsonSuccess({
+        reply: EMPTY_ACCOUNT_MESSAGE,
+        route: "empty_account",
+        usage: await aiUsageService.status(userId),
+      });
     }
 
     const months = Number(body.months);

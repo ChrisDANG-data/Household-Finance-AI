@@ -24,6 +24,14 @@ export interface AuthUserWithRecoveryCode extends AuthUser {
   recoveryCode: string;
 }
 
+/**
+ * Sessions issued before this moment stop working. Rounded down to the second so the
+ * session created right after a password change (second precision) stays valid.
+ */
+function sessionCutoff(): Date {
+  return new Date(Math.floor(Date.now() / 1000) * 1000);
+}
+
 export class UserAuthService {
   async findByUsername(username: string): Promise<{
     id: string;
@@ -131,10 +139,62 @@ export class UserAuthService {
       data: {
         passwordHash: hashPassword(newPassword),
         recoveryCodeHash: hashRecoveryCode(nextCode),
+        sessionsValidAfter: sessionCutoff(),
       },
     });
 
     return { id: user.id, username: user.username, recoveryCode: nextCode };
+  }
+
+  /**
+   * Change the password while signed in. Signs out every other browser;
+   * the caller issues a fresh session for this one.
+   */
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<AuthUser> {
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      throw new AppError(passwordError, {
+        code: "VALIDATION_ERROR",
+        statusCode: 400,
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, passwordHash: true },
+    });
+    if (!user) {
+      throw new AppError("Account not found", {
+        code: "NOT_FOUND",
+        statusCode: 404,
+      });
+    }
+    if (isSharedAccount(user.username)) {
+      throw new AppError("The password of a shared demo account cannot be changed", {
+        code: "FORBIDDEN",
+        statusCode: 403,
+      });
+    }
+    if (!verifyPassword(currentPassword, user.passwordHash)) {
+      throw new AppError("Current password is incorrect", {
+        code: "UNAUTHORIZED",
+        statusCode: 401,
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hashPassword(newPassword),
+        sessionsValidAfter: sessionCutoff(),
+      },
+    });
+
+    return { id: user.id, username: user.username };
   }
 
   /** Whether the signed-in user can use / create a recovery code. */

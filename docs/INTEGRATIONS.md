@@ -19,7 +19,7 @@ See **[PRIVACY.md](./PRIVACY.md)** for full detail. On **Vercel**, set before us
 | `TOKEN_ENCRYPTION_KEY` | AES-256-GCM for Plaid `access_token` at rest |
 | `AUTOMATION_WEBHOOK_TOKEN` | Required Bearer token for n8n/Telegram routes (fail closed in prod) |
 | `AUTH_ALLOW_REGISTRATION` | `true` to allow sign-up UI; `false` on prod after users exist |
-| `AUTH_SHARED_ACCOUNTS` | Optional. Comma-separated usernames whose password is public (demo logins); password recovery is disabled for them. Default: `householdfinance` |
+| `AUTH_SHARED_ACCOUNTS` | Optional. Comma-separated usernames of shared demo accounts whose password you publish; password change, recovery and deletion are disabled for them. Default: none |
 
 Create users via **Create account** on the home page (local) or `npx tsx scripts/create-user.ts <user> <pass>`.
 

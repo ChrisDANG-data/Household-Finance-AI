@@ -7,6 +7,15 @@ export interface SessionPayload {
   sub: string;
   username: string;
   exp: number;
+  /** Issued-at (seconds). Missing on tokens created before this field existed. */
+  iat?: number;
+}
+
+/** When a session was issued, in seconds — derived from expiry for older tokens. */
+export function sessionIssuedAt(payload: SessionPayload): number {
+  return typeof payload.iat === "number"
+    ? payload.iat
+    : payload.exp - SESSION_TTL_SECONDS;
 }
 
 function encodeBase64Url(value: string): string {
@@ -69,10 +78,12 @@ export async function createSessionToken(user: {
   username: string;
 }): Promise<string> {
   const secret = env.auth.secret();
+  const now = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
     sub: user.id,
     username: user.username,
-    exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+    exp: now + SESSION_TTL_SECONDS,
+    iat: now,
   };
   const body = encodeBase64Url(JSON.stringify(payload));
   const signature = await sign(body, secret);

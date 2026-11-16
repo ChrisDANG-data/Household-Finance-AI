@@ -45,6 +45,9 @@ Uses one request from the daily allowance.
 
 Show `reply` to the user as written.
 
+If the account has no data at all, the call returns `route: "empty_account"` with a
+`reply` asking the user to add data first. That reply does not use the daily allowance.
+
 ## GET /api/agent/summary?month=YYYY-MM
 
 Deterministic monthly summary. No AI call, does not use the allowance.

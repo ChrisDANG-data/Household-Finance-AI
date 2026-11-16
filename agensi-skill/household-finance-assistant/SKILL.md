@@ -69,7 +69,12 @@ Full request and response details: `references/api.md`.
    to pick another user, and you must not try.
 5. **Stay inside the data.** If the reply says there is no data, say so. Do not
    fill gaps with estimates or general assumptions about the household.
-6. **This is not financial advice.** Present results as information from the
+6. **Empty accounts come first.** A new account has no data. If `ask` replies that
+   the account has no data yet (route `empty_account`), or `summary` is all zeros,
+   do not present that as a financial result. Tell the user their account is
+   empty and offer to add their income, regular expenses, and a starting balance
+   (ledger entries via `add`, balances on the website's Balances page).
+7. **This is not financial advice.** Present results as information from the
    user's own ledger, not as a recommendation to buy, sell, or borrow.
 
 ## Handling errors

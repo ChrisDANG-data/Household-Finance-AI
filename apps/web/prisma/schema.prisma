@@ -70,6 +70,8 @@ model User {
   passwordHash String   @map("password_hash")
   /// SHA-256 of the one-time recovery code (null for accounts created before recovery codes)
   recoveryCodeHash String? @map("recovery_code_hash")
+  /// Sessions issued before this moment are rejected (set on password change / reset)
+  sessionsValidAfter DateTime? @map("sessions_valid_after")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

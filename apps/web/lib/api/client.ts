@@ -204,6 +204,7 @@ export interface PlaidConnectionStatus {
   last_synced_at: string | null;
   updated_at: string | null;
   plaid_configured: boolean;
+  plaid_environment?: "sandbox" | "production";
 }
 
 export async function fetchPlaidStatus(): Promise<PlaidConnectionStatus> {

@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 import { withAuthenticatedHandler } from "@/lib/api/authenticated-handler";
 import { jsonSuccess } from "@/utils/api-response";
 import { plaidApiService } from "@/services/integrations/plaid/plaid-api.service";
@@ -10,6 +11,7 @@ export async function GET() {
     return jsonSuccess({
       ...status,
       plaid_configured: plaidApiService.isConfigured(),
+      plaid_environment: env.plaid.environment(),
     });
   });
 }

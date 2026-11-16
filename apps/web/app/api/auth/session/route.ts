@@ -1,21 +1,15 @@
-import { cookies } from "next/headers";
-
 import { withApiHandler } from "@/lib/api/route-handler";
 import { isAuthEnabled } from "@/lib/auth/config";
 import { env } from "@/lib/env";
-import {
-  readSessionPayload,
-  SESSION_COOKIE_NAME,
-} from "@/lib/auth/session";
+import { readValidSession } from "@/lib/auth/request-user";
 import { jsonSuccess } from "@/utils/api-response";
 import { userAuthService } from "@/services/auth/user-auth.service";
 
 export async function GET() {
   return withApiHandler(async () => {
     const authEnabled = isAuthEnabled();
-    const cookieStore = await cookies();
-    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-    const payload = authEnabled ? await readSessionPayload(token ?? null) : null;
+    // Also false when the account was deleted or its password changed since sign-in.
+    const payload = authEnabled ? await readValidSession() : null;
 
     const userCount = authEnabled ? await userAuthService.countUsers() : 0;
 
