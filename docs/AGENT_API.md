@@ -64,8 +64,7 @@ with a server warning), but creating API keys fails until the tables exist.
 
 ## Notes
 
-- The shared `AUTOMATION_WEBHOOK_TOKEN` routes (`/api/automation/*`) are still there for
-  your own n8n workflows. That token can act as any `user_id`, so **never** give it to
-  other people or put it in a skill package.
-- The public demo login shares one account, so anyone using it shares that account's
-  API keys and daily allowance.
+- The older `/api/automation/*` routes (built for n8n) use one shared
+  `AUTOMATION_WEBHOOK_TOKEN` that can act as any `user_id`. On the live site that
+  variable is not set, so those routes refuse every request. If you set it again for
+  your own n8n workflows, **never** give it to other people or put it in a skill package.

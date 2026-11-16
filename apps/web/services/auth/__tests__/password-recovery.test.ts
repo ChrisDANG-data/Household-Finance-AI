@@ -88,22 +88,23 @@ describe("password recovery", () => {
   });
 
   it("never resets the shared demo account", async () => {
+    process.env.AUTH_SHARED_ACCOUNTS = "shareddemo";
     const code = generateRecoveryCode();
     db.user.findUnique.mockResolvedValue({
       id: "demo",
-      username: "householdfinance",
+      username: "shareddemo",
       recoveryCodeHash: hashRecoveryCode(code),
     });
 
     await expect(
       userAuthService.resetPasswordWithRecoveryCode(
-        "householdfinance",
+        "shareddemo",
         code,
         "new-password-1",
       ),
     ).rejects.toMatchObject({ statusCode: 401 });
     await expect(
-      userAuthService.regenerateRecoveryCode("demo", "householdfinanceai"),
+      userAuthService.regenerateRecoveryCode("demo", "shared-demo-password"),
     ).rejects.toMatchObject({ statusCode: 403 });
     await expect(userAuthService.getRecoveryStatus("demo")).resolves.toEqual({
       available: false,
@@ -149,13 +150,14 @@ describe("password recovery", () => {
   });
 
   it("does not let anyone change the shared demo account's password", async () => {
+    process.env.AUTH_SHARED_ACCOUNTS = "shareddemo";
     db.user.findUnique.mockResolvedValue({
       id: "demo",
-      username: "householdfinance",
-      passwordHash: hashPassword("householdfinanceai"),
+      username: "shareddemo",
+      passwordHash: hashPassword("shared-demo-password"),
     });
     await expect(
-      userAuthService.changePassword("demo", "householdfinanceai", "new-password-1"),
+      userAuthService.changePassword("demo", "shared-demo-password", "new-password-1"),
     ).rejects.toMatchObject({ statusCode: 403 });
     expect(db.user.update).not.toHaveBeenCalled();
   });

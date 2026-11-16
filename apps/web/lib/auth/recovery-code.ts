@@ -5,8 +5,8 @@ const SYMBOLS = "ABCDEFGHJKMNPQRSTVWXYZ23456789";
 const CODE_LENGTH = 20;
 const GROUP_SIZE = 5;
 
-/** Accounts whose password is public (shared demo logins) — recovery is disabled for them. */
-const DEFAULT_SHARED_ACCOUNTS = "householdfinance";
+/** No shared accounts by default — every account belongs to one person. */
+const DEFAULT_SHARED_ACCOUNTS = "";
 
 /** A one-time code like `K7QMX-2HDPA-9RTWB-4ZNCE`. Shown once; only its hash is stored. */
 export function generateRecoveryCode(): string {
@@ -43,9 +43,9 @@ export function verifyRecoveryCode(code: string, storedHash: string | null): boo
 }
 
 /**
- * Shared demo accounts must not be recoverable — otherwise anyone who knows the
- * public demo password could take the account over. Override with
- * AUTH_SHARED_ACCOUNTS="name1,name2" (empty string = none).
+ * If you ever publish a login for a shared demo account, list its username in
+ * AUTH_SHARED_ACCOUNTS="name1,name2". Password change, recovery and deletion are then
+ * disabled for it, so nobody who knows the public password can take it over.
  */
 export function isSharedAccount(username: string): boolean {
   const raw = process.env.AUTH_SHARED_ACCOUNTS ?? DEFAULT_SHARED_ACCOUNTS;
