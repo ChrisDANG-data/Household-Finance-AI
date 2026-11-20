@@ -14,7 +14,7 @@ interface ExtractionBody {
   documentId: string;
   /** Set to true to save obligations to DB. Default: false (preview only). */
   confirm?: boolean;
-  ai_provider?: "claude" | "gemini";
+  ai_provider?: "claude";
   /** User-edited obligations from the review dialog (required when confirm is true). */
   obligations?: ExtractedObligation[];
   /** Replace any prior obligations/events from this document on confirm. */

@@ -25,39 +25,27 @@ export function GoogleVoiceAskButton({
   className,
 }: GoogleVoiceAskButtonProps) {
   const {
-    provider,
-    geminiAvailable,
     cloudSttAvailable,
     localSttAvailable,
     loaded: providerLoaded,
   } = useAiProvider();
 
-  const recordingSttProvider: RecordingSttProvider =
-    provider === "gemini"
-      ? "gemini"
-      : cloudSttAvailable
-        ? "whisper"
-        : localSttAvailable
-          ? "local"
-          : "whisper";
+  const recordingSttProvider: RecordingSttProvider = cloudSttAvailable
+    ? "whisper"
+    : localSttAvailable
+      ? "local"
+      : "whisper";
 
-  const canRecordTranscribe =
-    provider === "gemini"
-      ? geminiAvailable
-      : cloudSttAvailable || localSttAvailable;
+  const canRecordTranscribe = cloudSttAvailable || localSttAvailable;
 
   /** Enable record+STT when a backend exists; stay enabled while config loads. */
   const recordingFallback = !providerLoaded || canRecordTranscribe;
 
   useEffect(() => {
+    // Clear leftovers from the old Claude/Gemini voice switch.
     sessionStorage.removeItem("fi-voice-prefer-record");
-    if (provider === "claude") {
-      sessionStorage.removeItem("fi-voice-prefer-record-gemini");
-    } else {
-      sessionStorage.removeItem("fi-voice-prefer-record-local");
-      sessionStorage.removeItem("fi-voice-prefer-record-whisper");
-    }
-  }, [provider]);
+    sessionStorage.removeItem("fi-voice-prefer-record-gemini");
+  }, []);
 
   const { listening, processing, toggle } = useGoogleVoiceInput({
     onTranscript: (text) => onTranscript(text),

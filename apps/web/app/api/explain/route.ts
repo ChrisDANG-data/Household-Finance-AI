@@ -15,7 +15,7 @@ interface ExplainBody {
   user_query?: string;
   /** Set false to force deterministic text (no LLM call) */
   use_llm?: boolean;
-  ai_provider?: "claude" | "gemini";
+  ai_provider?: "claude";
 }
 
 /** POST — AI Financial Advisor: explain deterministic engine outputs */

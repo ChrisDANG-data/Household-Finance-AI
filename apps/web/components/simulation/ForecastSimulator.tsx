@@ -1266,13 +1266,11 @@ function ChatInput() {
           </Button>
         </form>
         <p className="mt-2 text-xs text-muted-foreground">
-          {provider === "gemini"
-            ? "Voice (Gemini): uses Google speech. Free tier has daily quotas."
-            : cloudSttAvailable
-              ? "Voice (Claude): cloud Whisper (~$0.006/min). On Vercel, set OPENAI_API_KEY in Environment Variables."
-              : localSttAvailable
-                ? "Voice (Claude): local Whisper on your PC. Click mic, speak 3+ seconds, click again."
-                : "Voice unavailable on this host. Add OPENAI_API_KEY in Vercel env vars (production) or run npm run dev locally."}
+          {cloudSttAvailable
+            ? "Voice: cloud Whisper (~$0.006/min). On Vercel, set OPENAI_API_KEY in Environment Variables."
+            : localSttAvailable
+              ? "Voice: local Whisper on your PC. Click mic, speak 3+ seconds, click again."
+              : "Voice unavailable on this host. Add OPENAI_API_KEY in Vercel env vars (production) or run npm run dev locally."}
         </p>
         {voiceError ? (
           <p className="mt-3 text-sm text-destructive" role="alert">

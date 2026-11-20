@@ -1,4 +1,4 @@
-export type AiProvider = "claude" | "gemini";
+export type AiProvider = "claude";
 
 export interface LlmTokenUsage {
   input_tokens: number;
@@ -27,7 +27,6 @@ export interface LlmCompleteResponse {
 
 export interface AiProviderAvailability {
   claude: boolean;
-  gemini: boolean;
   /** Cloud Whisper via OPENAI_API_KEY or OPENROUTER_API_KEY (paid, reliable). */
   stt_cloud: boolean;
   /** Free on-device Xenova Whisper (local dev only). */

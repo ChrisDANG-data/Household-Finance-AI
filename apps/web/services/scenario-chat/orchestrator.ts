@@ -276,7 +276,7 @@ OUTPUT FORMAT:
         if (msg.includes("429") || msg.includes("rate limit")) {
           return {
             answer:
-              "Gemini rate limit reached. Switch to Claude in the header, or wait a minute and try again.",
+              "The AI service is busy right now. Wait a minute and try again.",
             hasDocumentContext: true,
           };
         }

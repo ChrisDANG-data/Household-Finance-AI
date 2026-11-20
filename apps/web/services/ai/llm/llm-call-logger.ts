@@ -92,14 +92,7 @@ export function estimateCostUsd(
   provider: AiProvider,
   usage: LlmTokenUsage,
 ): { usd: number; note: string } {
-  if (provider === "gemini") {
-    return {
-      usd: 0,
-      note:
-        "Gemini: $0.00 USD (free tier; no charge applied in this app)",
-    };
-  }
-
+  void provider; // Claude is the only provider
   const { input, output } = claudeRatesPerMillion();
   const usd =
     (usage.input_tokens / 1_000_000) * input +

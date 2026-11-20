@@ -21,7 +21,7 @@ interface ChunkRow {
 
 /**
  * Document Intelligence Engine — semantic retrieval over document chunks.
- * Uses local embeddings for vector search and Claude or Gemini for answer generation.
+ * Uses local embeddings for vector search and Claude for answer generation.
  */
 export class DocumentRagService {
   /**

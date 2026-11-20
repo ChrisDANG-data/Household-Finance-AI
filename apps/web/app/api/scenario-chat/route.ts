@@ -24,7 +24,7 @@ interface ScenarioChatBody {
   forecast_start_month?: string;
   use_llm?: boolean;
   stream?: boolean;
-  ai_provider?: "claude" | "gemini";
+  ai_provider?: "claude";
   analyst_mode?: "auto" | "cost" | "investment" | "payments";
   langgraph_enabled?: boolean;
 }

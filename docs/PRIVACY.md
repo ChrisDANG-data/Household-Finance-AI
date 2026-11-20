@@ -55,7 +55,6 @@ Local development: auth and encryption are **off by default** unless you set `AU
 When you use scenario chat, RAG, document extraction, or voice:
 
 - **Anthropic** (Claude, for all AI answers and document extraction) and **OpenAI** (embeddings, Whisper voice transcription) may receive **portions of ledger text, document chunks, or your question**.
-- **Google** (Gemini) is not used unless the operator opts in to the voice fallback with `STT_GEMINI_FALLBACK=true`.
 - **Money calculations** remain in deterministic code — the LLM explains and retrieves; it does not write ledger truth.
 
 **Production next step (Tier 2):** PII minimization / tokenization before LLM calls (e.g. Presidio-style redaction).

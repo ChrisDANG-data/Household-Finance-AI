@@ -46,7 +46,6 @@ export const env = {
       return openAi;
     },
     anthropicApiKey: () => optionalEnv("ANTHROPIC_API_KEY"),
-    geminiApiKey: () => optionalEnv("GOOGLE_API_KEY", optionalEnv("GEMINI_API_KEY")),
     defaultProvider: () => optionalEnv("AI_PROVIDER", "claude"),
   },
 

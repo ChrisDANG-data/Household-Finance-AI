@@ -39,7 +39,6 @@ export function getAiProviderAvailability(): AiProviderAvailability {
     process.env.LOCAL_STT_ENABLED !== "false" && !env.isVercel();
   return {
     claude: isProviderConfigured(TEXT_PROVIDER),
-    gemini: false,
     stt_cloud,
     stt_local,
     default: TEXT_PROVIDER,

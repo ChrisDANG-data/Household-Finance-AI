@@ -10,11 +10,10 @@ export const maxDuration = 120;
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
-type SttProvider = "gemini" | "whisper" | "local";
+type SttProvider = "whisper" | "local";
 
 function parseProvider(raw: FormDataEntryValue | null): SttProvider {
   if (raw === "whisper" || raw === "openai" || raw === "cloud") return "whisper";
-  // "gemini" is no longer selectable — it falls through to the default below.
   if (raw === "local") {
     if (env.isVercel()) {
       if (env.ai.whisperApiKey()?.trim()) return "whisper";
@@ -35,7 +34,7 @@ function parseProvider(raw: FormDataEntryValue | null): SttProvider {
   return "local";
 }
 
-/** POST — transcribe audio: cloud Whisper, local Whisper, or Gemini */
+/** POST — transcribe audio: cloud Whisper or local Whisper */
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();

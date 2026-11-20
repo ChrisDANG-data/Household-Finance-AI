@@ -26,7 +26,7 @@ function unauthorizedApi(): NextResponse {
   );
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!isAuthEnabled()) {
     return NextResponse.next();
   }

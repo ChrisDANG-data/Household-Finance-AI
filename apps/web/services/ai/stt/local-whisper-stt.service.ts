@@ -37,7 +37,7 @@ async function convertToWavWithFfmpeg(
     ffmpegPath = resolveFfmpegPath();
   } catch {
     throw new AppError(
-      "ffmpeg binary missing for local voice. Run: cd apps/web && node scripts/ensure-ffmpeg.mjs — or use Gemini voice mode.",
+      "ffmpeg binary missing for local voice. Run: cd apps/web && node scripts/ensure-ffmpeg.mjs — or add OPENAI_API_KEY to use cloud Whisper.",
       { code: "STT_NOT_CONFIGURED", statusCode: 503 },
     );
   }

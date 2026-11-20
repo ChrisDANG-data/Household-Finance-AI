@@ -2,7 +2,6 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -10,29 +9,21 @@ import {
   type ReactNode,
 } from "react";
 
-import {
-  type AiProvider,
-  type AiProviderConfig,
-  readStoredAiProvider,
-  resolveClientProvider,
-  storeAiProvider,
-} from "@/lib/ai-provider";
+import type { AiProvider, AiProviderConfig } from "@/lib/ai-provider";
 
 const DEFAULT_CONFIG: AiProviderConfig = {
   claude: false,
-  gemini: false,
   stt_cloud: false,
   stt_local: false,
   default: "claude",
 };
 
 interface AiProviderContextValue {
+  /** Always Claude — kept so callers can pass it through as `ai_provider`. */
   provider: AiProvider;
-  setProvider: (provider: AiProvider) => void;
   config: AiProviderConfig;
   loaded: boolean;
   claudeAvailable: boolean;
-  geminiAvailable: boolean;
   cloudSttAvailable: boolean;
   localSttAvailable: boolean;
 }
@@ -41,61 +32,36 @@ const AiProviderContext = createContext<AiProviderContextValue | null>(null);
 
 export function AiProviderProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<AiProviderConfig>(DEFAULT_CONFIG);
-  const [provider, setProviderState] = useState<AiProvider>("claude");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      try {
-        const res = await fetch("/api/ai/config", { cache: "no-store" });
-        const json = (await res.json()) as {
-          success: boolean;
-          data?: AiProviderConfig;
-        };
-        if (cancelled || !json.success || !json.data) return;
-
-        const stored = readStoredAiProvider();
-        const resolved = resolveClientProvider(stored, json.data);
-        setConfig(json.data);
-        setProviderState(resolved);
-      } catch {
-        const stored = readStoredAiProvider();
-        if (stored) setProviderState(stored);
-      } finally {
+    fetch("/api/ai/config", { cache: "no-store" })
+      .then((res) => res.json() as Promise<{ success: boolean; data?: AiProviderConfig }>)
+      .then((json) => {
+        if (!cancelled && json.success && json.data) setConfig(json.data);
+      })
+      .catch(() => undefined)
+      .finally(() => {
         if (!cancelled) setLoaded(true);
-      }
-    }
+      });
 
-    void load();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const setProvider = useCallback(
-    (next: AiProvider) => {
-      if (next === "claude" && !config.claude) return;
-      if (next === "gemini" && !config.gemini) return;
-      storeAiProvider(next);
-      setProviderState(next);
-    },
-    [config.claude, config.gemini],
-  );
-
   const value = useMemo(
     () => ({
-      provider,
-      setProvider,
+      provider: "claude" as const,
       config,
       loaded,
       claudeAvailable: config.claude,
-      geminiAvailable: config.gemini,
       cloudSttAvailable: config.stt_cloud,
       localSttAvailable: config.stt_local,
     }),
-    [provider, setProvider, config, loaded],
+    [config, loaded],
   );
 
   return (
