@@ -104,7 +104,7 @@ function assertSaveableObligationAmount(amount: number): void {
 
 /**
  * Document Intelligence Engine — text → structured obligations.
- * Uses an LLM (Claude or Gemini) to parse extracted text into financial obligations.
+ * Uses Claude to parse extracted text into financial obligations.
  */
 export class DocumentExtractionService {
   async extract(

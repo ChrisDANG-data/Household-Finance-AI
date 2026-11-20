@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const result = await documentRagService.ask(question, {
       topK: typeof topK === "number" ? topK : undefined,
       provider:
-        ai_provider === "gemini" || ai_provider === "claude"
+        ai_provider === "claude"
           ? ai_provider
           : undefined,
       userId,

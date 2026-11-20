@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type SpeechRecognitionCtor = new () => SpeechRecognition;
 
 type VoiceMode = "browser" | "record";
-export type RecordingSttProvider = "local" | "gemini" | "whisper";
+export type RecordingSttProvider = "local" | "whisper";
 
 function preferRecordKey(stt: RecordingSttProvider): string {
   return `fi-voice-prefer-record-${stt}`;
@@ -36,7 +36,7 @@ export interface UseGoogleVoiceInputOptions {
   onError?: (message: string) => void;
   /** When true, use mic recording + /api/stt if browser speech fails or is blocked. */
   recordingFallbackEnabled?: boolean;
-  /** STT backend for recorded audio (Claude → cloud/local Whisper, Gemini → gemini). */
+  /** STT backend for recorded audio: cloud or local Whisper. */
   recordingSttProvider?: RecordingSttProvider;
   lang?: string;
 }
@@ -50,9 +50,6 @@ function browserBlockedMessage(stt: RecordingSttProvider | undefined): string {
   }
   if (stt === "local") {
     return "Browser speech could not reach Google. Local voice transcription will be used when you record — or type your question.";
-  }
-  if (stt === "gemini") {
-    return "Browser speech could not reach Google. Switch to Gemini for recorded voice, or type your question.";
   }
   return "Browser speech could not reach Google (VPN/firewall/ad blocker). Type your question.";
 }

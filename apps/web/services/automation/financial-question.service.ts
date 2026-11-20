@@ -12,7 +12,7 @@ export interface FinancialQuestionAutomationInput {
   months?: number;
   forecast_start_month?: string;
   use_llm?: boolean;
-  ai_provider?: "claude" | "gemini";
+  ai_provider?: "claude";
 }
 
 export interface FinancialQuestionAutomationResult {

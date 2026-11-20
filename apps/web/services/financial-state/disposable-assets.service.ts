@@ -229,7 +229,7 @@ export function computeDisposableAssets(input: {
   return {
     as_of: input.as_of,
     month,
-    currency: "CAD",
+    currency,
     balance_source: input.balance_source,
     plaid_connected: input.plaid_connected && !useManual,
     checking_total,

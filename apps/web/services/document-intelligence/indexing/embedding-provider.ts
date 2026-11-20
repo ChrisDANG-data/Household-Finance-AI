@@ -1,4 +1,3 @@
-import { env } from "@/lib/env";
 import { AppError } from "@/utils/errors";
 
 import {

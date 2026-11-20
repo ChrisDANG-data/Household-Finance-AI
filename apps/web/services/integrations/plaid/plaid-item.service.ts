@@ -56,7 +56,7 @@ export class PlaidItemService {
         item_id: row.itemId,
         access_token: decryptSecret(row.accessToken),
       };
-    } catch (error) {
+    } catch {
       throw new AppError("Failed to decrypt Plaid access token", {
         code: "DECRYPTION_ERROR",
         statusCode: 500,

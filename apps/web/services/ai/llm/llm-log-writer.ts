@@ -45,20 +45,17 @@ export async function logLlmCallSuccess(
 export async function logLlmCallFailure(
   request: LlmCompleteRequest,
   startedAt: Date,
-  provider: LlmCompleteResponse["provider"] | "claude" | "gemini",
+  provider: LlmCompleteResponse["provider"],
   error: unknown,
   model?: string,
 ): Promise<void> {
   const endedAt = new Date();
   const usage = buildTokenUsage(request.system, request.user, null);
-  const { usd, note } = estimateCostUsd(
-    provider === "claude" || provider === "gemini" ? provider : "claude",
-    usage,
-  );
+  const { usd, note } = estimateCostUsd(provider, usage);
 
   const entry: LlmCallLogEntry = {
     id: createLogId(),
-    provider: provider === "claude" || provider === "gemini" ? provider : "claude",
+    provider,
     model: model ?? request.model ?? "unknown",
     caller: request.caller ?? null,
     started_at: startedAt.toISOString(),

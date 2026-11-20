@@ -192,7 +192,6 @@ export async function generateFinancialAdvice(
         message.includes("429") ||
         message.includes("rate limit") ||
         message.includes("LLM_REQUEST_FAILED") ||
-        message.includes("Gemini API") ||
         error.name === "SyntaxError")
     ) {
       return buildDeterministicAdvice(input);

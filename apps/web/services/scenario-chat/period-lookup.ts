@@ -4,7 +4,6 @@ import {
   DEFAULT_USER_ID,
   financialStatePersistence,
 } from "@/services/financial-state/financial-state.persistence";
-import type { FinancialState } from "@/services/financial-state/state.types";
 
 import {
   detectQueryKind,

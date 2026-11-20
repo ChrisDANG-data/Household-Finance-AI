@@ -12,11 +12,10 @@ describe("llm-call-logger", () => {
     expect(estimateTokensFromText("abcdefgh")).toBe(2);
   });
 
-  it("charges $0 for Gemini", () => {
+  it("builds token usage from prompt and response text", () => {
     const usage = buildTokenUsage("sys", "user", "hello world");
-    const { usd, note } = estimateCostUsd("gemini", usage);
-    expect(usd).toBe(0);
-    expect(note).toContain("Gemini");
+    expect(usage.input_tokens).toBeGreaterThan(0);
+    expect(usage.output_tokens).toBeGreaterThan(0);
   });
 
   it("estimates Claude cost from token counts", () => {

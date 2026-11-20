@@ -1,7 +1,6 @@
 import type {
   FinancialEventFrequency,
   FinancialEventType,
-  Prisma,
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
