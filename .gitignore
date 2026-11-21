@@ -37,3 +37,6 @@ yarn-error.log*
 coverage/
 
 /generated/prisma
+
+# Agensi upload package (build output)
+agensi-skill/*.zip
