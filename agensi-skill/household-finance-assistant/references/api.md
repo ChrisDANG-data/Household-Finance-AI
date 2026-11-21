@@ -88,4 +88,4 @@ Saved (HTTP 201): `{ "status": "saved", "reply": "Saved: ...", "event": { } }`
 | 400 | `VALIDATION_ERROR` | Missing or invalid field |
 | 401 | `UNAUTHORIZED` | Key missing, malformed, unknown, or revoked |
 | 404 | `NOT_FOUND` | No data for the requested month |
-| 429 | `RATE_LIMITED` | Daily AI allowance reached; resets at 00:00 UTC |
+| 429 | `RATE_LIMITED` | Daily AI allowance reached (per user, or service-wide); resets at 00:00 UTC |

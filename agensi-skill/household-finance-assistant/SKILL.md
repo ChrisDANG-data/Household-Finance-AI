@@ -82,7 +82,7 @@ Full request and response details: `references/api.md`.
 | Status | Meaning | What to do |
 |--------|---------|------------|
 | 401 `UNAUTHORIZED` | Key missing, wrong, or revoked | Ask the user to create a new key in **API keys** |
-| 429 `RATE_LIMITED` | Daily AI allowance used up | Tell the user when it resets (in the message); `summary` still works |
+| 429 `RATE_LIMITED` | Daily AI allowance used up — the user's own, or the whole demo service's | Tell the user when it resets (in the message); `summary` still works |
 | 400 `VALIDATION_ERROR` | Bad input | Fix the input from the message and retry once |
 | 5xx | Service problem | Tell the user; do not retry in a loop |
 
