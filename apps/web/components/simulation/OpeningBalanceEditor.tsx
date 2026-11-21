@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,37 +39,39 @@ export function OpeningBalanceEditor({ onSaved }: OpeningBalanceEditorProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [hasManualSplit, setHasManualSplit] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/financial-state/state");
-      const json = await res.json();
-      if (!json.success) {
-        throw new Error(json.error?.message ?? "Could not load financial state");
-      }
-      const state = json.data.state as FinancialStatePayload;
-      const openings = resolvePartnerOpeningBalances({
-        current_cash: state.current_cash,
-        partner_a_opening_cash: state.partner_a_opening_cash,
-        partner_b_opening_cash: state.partner_b_opening_cash,
-      });
-      setPartnerA(String(openings.partnerA));
-      setPartnerB(String(openings.partnerB));
-      setHasManualSplit(
-        state.partner_a_opening_cash != null &&
-          state.partner_b_opening_cash != null,
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Load failed");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetch("/api/financial-state/state")
+      .then((res) => res.json())
+      .then((json) => {
+        if (ignore) return;
+        if (!json.success) {
+          throw new Error(json.error?.message ?? "Could not load financial state");
+        }
+        const state = json.data.state as FinancialStatePayload;
+        const openings = resolvePartnerOpeningBalances({
+          current_cash: state.current_cash,
+          partner_a_opening_cash: state.partner_a_opening_cash,
+          partner_b_opening_cash: state.partner_b_opening_cash,
+        });
+        setPartnerA(String(openings.partnerA));
+        setPartnerB(String(openings.partnerB));
+        setHasManualSplit(
+          state.partner_a_opening_cash != null &&
+            state.partner_b_opening_cash != null,
+        );
+      })
+      .catch((err: unknown) => {
+        if (!ignore) setError(err instanceof Error ? err.message : "Load failed");
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const householdTotal = roundMoney(
     (Number(partnerA) || 0) + (Number(partnerB) || 0),

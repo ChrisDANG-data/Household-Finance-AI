@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -62,8 +62,15 @@ export function ObligationReviewDialog({
   const [rows, setRows] = useState<ReviewableObligation[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // What the rows were last reset from. Reset again when the dialog opens or
+  // receives new obligations (adjusting state during render, not in an effect).
+  const [resetFrom, setResetFrom] = useState<{
+    open: boolean;
+    obligations: ReviewableObligation[];
+  }>({ open: false, obligations: initialObligations });
 
-  useEffect(() => {
+  if (resetFrom.open !== open || resetFrom.obligations !== initialObligations) {
+    setResetFrom({ open, obligations: initialObligations });
     if (open) {
       setRows(
         initialObligations.length > 0
@@ -75,7 +82,7 @@ export function ObligationReviewDialog({
       );
       setError(null);
     }
-  }, [open, initialObligations]);
+  }
 
   if (!open) return null;
 

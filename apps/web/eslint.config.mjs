@@ -7,9 +7,6 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
-      // New React Compiler rule that flags the common "load data in useEffect" pattern
-      // used across this app. Kept visible as a warning; it does not block CI.
-      "react-hooks/set-state-in-effect": "warn",
       // Names starting with "_" are deliberately unused (placeholder arguments,
       // values dropped from a destructure).
       "@typescript-eslint/no-unused-vars": [

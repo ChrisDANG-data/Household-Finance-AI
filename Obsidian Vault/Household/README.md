@@ -10,7 +10,7 @@ Engineering notes live in vault root folders (`00_Dashboard`, `02_Decisions`, `0
 - [[Household/Ledger/Events]]
 
 ## Documents
-- [[Household/Documents/85637fc1-c3de-40a9-80ba-9764b51fdf85]]
+- [[Household/Documents/301561b3-83d8-4404-b5b1-44eacc7c2ee5]]
 
 ## Categories
 - _No categories yet._

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -136,23 +136,36 @@ function EmptyResultState() {
   );
 }
 
+// The saved result never changes while this page is open, so there is nothing to subscribe to.
+function subscribeToNothing(): () => void {
+  return () => {};
+}
+
+function readSavedChatResult(): string | null {
+  return sessionStorage.getItem("chat_result");
+}
+
+/** The server has no sessionStorage — undefined means "not read yet" (shows the loader). */
+function readOnServer(): undefined {
+  return undefined;
+}
+
 export function ChatResultView() {
-  const [result, setResult] = useState<ChatResultData | null | undefined>(
-    undefined,
+  const raw = useSyncExternalStore(
+    subscribeToNothing,
+    readSavedChatResult,
+    readOnServer,
   );
 
-  useEffect(() => {
-    const raw = sessionStorage.getItem("chat_result");
-    if (raw) {
-      try {
-        setResult(JSON.parse(raw) as ChatResultData);
-      } catch {
-        setResult(null);
-      }
-    } else {
-      setResult(null);
+  const result = useMemo<ChatResultData | null | undefined>(() => {
+    if (raw === undefined) return undefined;
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as ChatResultData;
+    } catch {
+      return null;
     }
-  }, []);
+  }, [raw]);
 
   if (result === undefined) {
     return (

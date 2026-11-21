@@ -47,8 +47,23 @@ export function PlaidBalanceHistoryPanel() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetchPlaidBalanceHistory()
+      .then((history) => {
+        if (ignore) return;
+        setData(history);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : "Could not load history");
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   async function runSync(force = true) {
     setBusy(true);
