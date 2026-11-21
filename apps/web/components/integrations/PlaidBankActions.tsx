@@ -43,8 +43,23 @@ export function PlaidBankActions({ onLinked, refreshKey = 0 }: PlaidBankActionsP
   }, []);
 
   useEffect(() => {
-    void loadStatus();
-  }, [loadStatus, refreshKey]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetchPlaidStatus()
+      .then((next) => {
+        if (ignore) return;
+        setStatus(next);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (ignore) return;
+        setStatus(null);
+        setError(err instanceof Error ? err.message : "Could not load bank status");
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [refreshKey]);
 
   const onSuccess = useCallback(
     async (publicToken: string) => {

@@ -79,6 +79,16 @@ function formatMoney(amount: number, currency: string): string {
   }).format(amount);
 }
 
+/** Ledger events, newest first. Null when the API reports a failure. */
+async function fetchSortedEvents(): Promise<SerializedFinancialEvent[] | null> {
+  const res = await fetch("/api/financial-state/events");
+  const json = await res.json();
+  if (!json.success) return null;
+  return [...(json.data.events as SerializedFinancialEvent[])].sort((a, b) =>
+    b.start_date.localeCompare(a.start_date),
+  );
+}
+
 export function FinancialEventForm() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [busy, setBusy] = useState(false);
@@ -89,14 +99,8 @@ export function FinancialEventForm() {
 
   const fetchEvents = useCallback(async () => {
     try {
-      const res = await fetch("/api/financial-state/events");
-      const json = await res.json();
-      if (json.success) {
-        const sorted = [...json.data.events].sort((a, b) =>
-          b.start_date.localeCompare(a.start_date),
-        );
-        setEvents(sorted);
-      }
+      const sorted = await fetchSortedEvents();
+      if (sorted) setEvents(sorted);
     } catch {
       /* events list is best-effort */
     } finally {
@@ -111,8 +115,20 @@ export function FinancialEventForm() {
   }, [fetchEvents]);
 
   useEffect(() => {
-    void fetchEvents();
-  }, [fetchEvents]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetchSortedEvents()
+      .then((sorted) => {
+        if (!ignore && sorted) setEvents(sorted);
+      })
+      .catch(() => undefined) // events list is best-effort
+      .finally(() => {
+        if (!ignore) setLoadingEvents(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));

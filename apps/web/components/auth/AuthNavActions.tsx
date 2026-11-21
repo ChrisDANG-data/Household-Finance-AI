@@ -45,27 +45,27 @@ export function AuthNavActions({ onHero }: { onHero: boolean }) {
   const [session, setSession] = useState<SessionState | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
-  const loadSession = useCallback(async () => {
-    try {
-      const data = await fetchSessionState();
-      setSession(data ?? fallbackSession());
-    } catch {
-      setSession(fallbackSession());
-    }
-  }, []);
-
   useEffect(() => {
-    void loadSession();
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
 
-    function onSessionChanged() {
-      void loadSession();
+    function refreshSession() {
+      fetchSessionState()
+        .then((data) => {
+          if (!ignore) setSession(data ?? fallbackSession());
+        })
+        .catch(() => {
+          if (!ignore) setSession(fallbackSession());
+        });
     }
 
-    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, onSessionChanged);
+    refreshSession();
+    window.addEventListener(AUTH_SESSION_CHANGED_EVENT, refreshSession);
     return () => {
-      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, onSessionChanged);
+      ignore = true;
+      window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, refreshSession);
     };
-  }, [loadSession]);
+  }, []);
 
   const signOut = useCallback(async () => {
     setSigningOut(true);

@@ -65,6 +65,70 @@ function recordToRow(record: ManualAccountRecord): FormRow {
   };
 }
 
+interface ManualSnapshot {
+  snapshotDate: string;
+  snapshotDates: string[];
+  rows: FormRow[];
+}
+
+/**
+ * Load the manual balances for one snapshot date (latest when omitted).
+ * Falls back to the older single-total manual balances when no accounts exist yet.
+ */
+async function fetchManualSnapshot(date?: string): Promise<ManualSnapshot> {
+  const query = date ? `?date=${encodeURIComponent(date)}` : "";
+  const res = await fetch(`/api/financial-state/manual-accounts${query}`);
+  const json = await res.json();
+  if (!json.success) {
+    throw new Error(json.error?.message ?? "Could not load accounts");
+  }
+  const snapshotDate = json.data.snapshot_date as string;
+  const accounts = json.data.accounts as ManualAccountRecord[];
+  const snapshotDates = json.data.snapshot_dates as string[];
+
+  if (accounts.length > 0) {
+    return { snapshotDate, snapshotDates, rows: accounts.map(recordToRow) };
+  }
+
+  const stateRes = await fetch("/api/financial-state/state");
+  const stateJson = await stateRes.json();
+  if (!stateJson.success) {
+    return { snapshotDate, snapshotDates, rows: [emptyRow()] };
+  }
+
+  const manual = stateJson.data.state.manual_balances as {
+    checking: number;
+    savings: number;
+    cash_management: number;
+    investment: number;
+    credit_owed: number;
+  };
+  const legacyRows: FormRow[] = [];
+  const pushIf = (type: ManualAccountType, balance: number, label: string) => {
+    if (balance > 0) {
+      legacyRows.push({
+        key: crypto.randomUUID(),
+        bank_name: "Manual",
+        account_name: label,
+        account_type: type,
+        balance: String(balance),
+        holdings_notes: "",
+      });
+    }
+  };
+  pushIf("checking", manual.checking ?? 0, "Checking");
+  pushIf("savings", manual.savings ?? 0, "Savings");
+  pushIf("cash_management", manual.cash_management ?? 0, "Cash management");
+  pushIf("investment_other", manual.investment ?? 0, "Investments");
+  pushIf("credit", manual.credit_owed ?? 0, "Credit owed");
+
+  return {
+    snapshotDate,
+    snapshotDates,
+    rows: legacyRows.length > 0 ? legacyRows : [emptyRow()],
+  };
+}
+
 export function ManualAccountBalancesForm({
   onSaved,
 }: ManualAccountBalancesFormProps) {
@@ -76,73 +140,44 @@ export function ManualAccountBalancesForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const load = useCallback(async (date?: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const query = date ? `?date=${encodeURIComponent(date)}` : "";
-      const res = await fetch(`/api/financial-state/manual-accounts${query}`);
-      const json = await res.json();
-      if (!json.success) {
-        throw new Error(json.error?.message ?? "Could not load accounts");
-      }
-      const loadedDate = json.data.snapshot_date as string;
-      const accounts = json.data.accounts as ManualAccountRecord[];
-      const dates = json.data.snapshot_dates as string[];
-
-      setSnapshotDate(loadedDate);
-      setSnapshotDates(dates);
-
-      if (accounts.length > 0) {
-        setRows(accounts.map(recordToRow));
-      } else {
-        const stateRes = await fetch("/api/financial-state/state");
-        const stateJson = await stateRes.json();
-        if (stateJson.success) {
-          const manual = stateJson.data.state.manual_balances as {
-            checking: number;
-            savings: number;
-            cash_management: number;
-            investment: number;
-            credit_owed: number;
-          };
-          const legacyRows: FormRow[] = [];
-          const pushIf = (
-            type: ManualAccountType,
-            balance: number,
-            label: string,
-          ) => {
-            if (balance > 0) {
-              legacyRows.push({
-                key: crypto.randomUUID(),
-                bank_name: "Manual",
-                account_name: label,
-                account_type: type,
-                balance: String(balance),
-                holdings_notes: "",
-              });
-            }
-          };
-          pushIf("checking", manual.checking ?? 0, "Checking");
-          pushIf("savings", manual.savings ?? 0, "Savings");
-          pushIf("cash_management", manual.cash_management ?? 0, "Cash management");
-          pushIf("investment_other", manual.investment ?? 0, "Investments");
-          pushIf("credit", manual.credit_owed ?? 0, "Credit owed");
-          setRows(legacyRows.length > 0 ? legacyRows : [emptyRow()]);
-        } else {
-          setRows([emptyRow()]);
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Load failed");
-    } finally {
-      setLoading(false);
-    }
+  const applySnapshot = useCallback((snapshot: ManualSnapshot) => {
+    setSnapshotDate(snapshot.snapshotDate);
+    setSnapshotDates(snapshot.snapshotDates);
+    setRows(snapshot.rows);
   }, []);
 
+  const load = useCallback(
+    async (date?: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        applySnapshot(await fetchManualSnapshot(date));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Load failed");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applySnapshot],
+  );
+
   useEffect(() => {
-    void load();
-  }, [load]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetchManualSnapshot()
+      .then((snapshot) => {
+        if (!ignore) applySnapshot(snapshot);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) setError(err instanceof Error ? err.message : "Load failed");
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [applySnapshot]);
 
   function handleSavedSnapshotSelect(date: string) {
     setSnapshotDate(date);

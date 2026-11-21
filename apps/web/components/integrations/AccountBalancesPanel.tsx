@@ -44,23 +44,6 @@ export function AccountBalancesPanel() {
   const [error, setError] = useState<string | null>(null);
   const [disposableRefresh, setDisposableRefresh] = useState(0);
 
-  const loadSource = useCallback(async () => {
-    setSourceLoading(true);
-    try {
-      const res = await fetch("/api/financial-state/state");
-      const json = await res.json();
-      if (!json.success) {
-        throw new Error(json.error?.message ?? "Could not load settings");
-      }
-      setBalanceSource(json.data.state.balance_source ?? "manual");
-      setSourceError(null);
-    } catch (err) {
-      setSourceError(err instanceof Error ? err.message : "Could not load settings");
-    } finally {
-      setSourceLoading(false);
-    }
-  }, []);
-
   const loadHistory = useCallback(async () => {
     try {
       const history =
@@ -75,12 +58,52 @@ export function AccountBalancesPanel() {
   }, [balanceSource]);
 
   useEffect(() => {
-    void loadSource();
-  }, [loadSource]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetch("/api/financial-state/state")
+      .then((res) => res.json())
+      .then((json) => {
+        if (ignore) return;
+        if (!json.success) {
+          throw new Error(json.error?.message ?? "Could not load settings");
+        }
+        setBalanceSource(json.data.state.balance_source ?? "manual");
+        setSourceError(null);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) {
+          setSourceError(err instanceof Error ? err.message : "Could not load settings");
+        }
+      })
+      .finally(() => {
+        if (!ignore) setSourceLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
-    void loadHistory();
-  }, [loadHistory, disposableRefresh]);
+    let ignore = false;
+    const request =
+      balanceSource === "manual"
+        ? fetchManualBalanceHistory()
+        : fetchPlaidBalanceHistory();
+    request
+      .then((history) => {
+        if (ignore) return;
+        setData(history);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : "Could not load history");
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [balanceSource, disposableRefresh]);
 
   async function handleSourceChange(next: BalanceSource) {
     if (next === balanceSource) return;

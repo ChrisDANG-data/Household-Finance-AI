@@ -38,6 +38,20 @@ interface RiskReport {
   };
 }
 
+/** Fetch the deterministic forecast. Throws with the API's message on failure. */
+async function fetchForecast(): Promise<ForecastResult> {
+  const res = await fetch("/api/simulation/forecast", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ months: FORECAST_MONTHS }),
+  });
+  const json = await res.json();
+  if (!json.success) {
+    throw new Error(json.error?.message ?? "Forecast failed");
+  }
+  return json.data as ForecastResult;
+}
+
 interface ForecastResult {
   timeline: SerializedTimelineMonth[];
   risk: RiskReport;
@@ -377,7 +391,8 @@ function ClusteredColumnChart({
 export function ForecastSimulator() {
   const monthOptions = generateMonthOptions();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
-  const [forecastLoading, setForecastLoading] = useState(false);
+  // Starts true: the forecast is fetched as soon as the page opens.
+  const [forecastLoading, setForecastLoading] = useState(true);
   const [forecastResult, setForecastResult] = useState<ForecastResult | null>(null);
   const [forecastError, setForecastError] = useState<string | null>(null);
 
@@ -395,17 +410,7 @@ export function ForecastSimulator() {
     setForecastLoading(true);
     setForecastError(null);
     try {
-      const res = await fetch("/api/simulation/forecast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ months: FORECAST_MONTHS }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        setForecastError(json.error?.message ?? "Forecast failed");
-        return;
-      }
-      setForecastResult(json.data);
+      setForecastResult(await fetchForecast());
     } catch (err) {
       setForecastError(err instanceof Error ? err.message : "Network error");
     } finally {
@@ -414,8 +419,24 @@ export function ForecastSimulator() {
   }, []);
 
   useEffect(() => {
-    runForecast();
-  }, [runForecast]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetchForecast()
+      .then((result) => {
+        if (!ignore) setForecastResult(result);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) {
+          setForecastError(err instanceof Error ? err.message : "Network error");
+        }
+      })
+      .finally(() => {
+        if (!ignore) setForecastLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const selectedMonthData = forecastResult?.timeline.find(
     (m) => m.month === selectedMonth,

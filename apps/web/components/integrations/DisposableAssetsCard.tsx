@@ -82,8 +82,26 @@ export function DisposableAssetsCard({
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load, refreshKey]);
+    // Ignore a response that arrives after this component unmounted or re-ran.
+    let ignore = false;
+    fetchDisposableAssets()
+      .then((data) => {
+        if (ignore) return;
+        setSummary(data);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (ignore) return;
+        setSummary(null);
+        setError(err instanceof Error ? err.message : "Could not load disposable assets");
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [refreshKey]);
 
   async function runLiveSync() {
     setSyncing(true);
